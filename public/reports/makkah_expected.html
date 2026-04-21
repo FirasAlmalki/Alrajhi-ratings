@@ -263,7 +263,7 @@ async function initData(){
     META.total      = counts.reduce((a,b)=>a+b,0);
     META.active_days= counts.length;
     META.avg_daily  = META.active_days ? Math.round(META.total/META.active_days) : 0;
-    META.peak_iso   = Object.keys(DAY_DATA).reduce((a,b)=>DAY_DATA[a].pilgrims>DAY_DATA[b].pilgrims?a:b,'');
+    const _keys=Object.keys(DAY_DATA); META.peak_iso = _keys.length ? _keys.reduce((a,b)=>DAY_DATA[a].pilgrims>DAY_DATA[b].pilgrims?a:b) : '';
     META.peak_count = META.peak_iso ? DAY_DATA[META.peak_iso].pilgrims : 0;
 
     document.getElementById('loading-overlay').style.display='none';
