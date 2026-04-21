@@ -215,7 +215,9 @@ function openModal(iso){
         </div>
       </div>
       <div class="grp-body">
-        <div class="drow"><span class="dlbl">رمز المجموعة:</span><span class="dval">${g.group_code}</span></div>
+        <div class="drow"><span class="dlbl">رقم الرحلة:</span><span class="dval">${g.flight}</span></div>
+        ${g.url?`<a class="map-btn" href="${g.url}" target="_blank" rel="noopener">📍 فتح الموقع على الخريطة</a>`:''}
+      </div>
         <div class="drow"><span class="dlbl">رقم الرحلة:</span><span class="dval">${g.flight}</span></div>
         <div class="drow"><span class="dlbl">من:</span><span class="dval">${g.from_city}</span></div>
         <div class="drow"><span class="dlbl">رقم العمارة:</span><span class="dval">${g.building}</span></div>
