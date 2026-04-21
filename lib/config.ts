@@ -51,6 +51,13 @@ export const REPORTS: Report[] = [
     desc:  'عرض وإدارة التقارير اليومية',
     icon:  '📁',
     file:  '/reports/daily_report_list.html'
+  },
+  {
+    key:   'makkah_expected',
+    label: 'الوصول المتوقع إلى مكة المكرمة',
+    desc:  'تقويم تفاعلي يعرض التواريخ المتوقعة لوصول حجاج المدينة إلى مكة — بعد 8 أيام إقامة',
+    icon:  '🕋',
+    file:  '/reports/makkah_expected.html'
   }
 ];
 
