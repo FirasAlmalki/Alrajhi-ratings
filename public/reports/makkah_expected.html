@@ -205,20 +205,17 @@ function splitCSVLine(line){
 }
 
 
-// Hijri — Umm al-Qura 1447:
-// 1 Shawwal  = 2026-03-31
-// 1 Dhul Qaʿdah = 2026-04-29  (Shawwal = 29 days)
-// 1 Dhul Hijjah = 2026-05-29  (Dhul Qaʿdah = 30 days)
+// Hijri 1447 — verified: Apr 25 = 8 Dhul Qaʿdah
+// → 1 Dhul Qaʿdah = Apr 18, 2026  (29 days)
+// → 1 Dhul Hijjah = May 17, 2026
 const MONTHS_H = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة',
                   'رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
-const H_SHAWWAL   = new Date('2026-03-31T00:00:00');
-const H_DHULQADAH = new Date('2026-04-29T00:00:00');
-const H_DHULHIJJAH= new Date('2026-05-29T00:00:00');
+const H_DHULQADAH  = new Date('2026-04-18T00:00:00');
+const H_DHULHIJJAH = new Date('2026-05-17T00:00:00');
 function toHijriLabel(d){
   const ms = 86400000;
   if(d >= H_DHULHIJJAH) return (Math.floor((d-H_DHULHIJJAH)/ms)+1)+' '+MONTHS_H[11]+' 1447';
-  if(d >= H_DHULQADAH)  return (Math.floor((d-H_DHULQADAH)/ms)+1) +' '+MONTHS_H[10]+' 1447';
-  return (Math.floor((d-H_SHAWWAL)/ms)+1)+' '+MONTHS_H[9]+' 1447';
+  return (Math.floor((d-H_DHULQADAH)/ms)+1)+' '+MONTHS_H[10]+' 1447';
 }
 
 
