@@ -58,6 +58,13 @@ export const REPORTS: Report[] = [
     desc:  'تقويم تفاعلي يعرض التواريخ المتوقعة لوصول حجاج المدينة إلى مكة — بعد 8 أيام إقامة',
     icon:  '🕋',
     file:  '/reports/makkah_expected.html'
+  },
+  {
+    key:   'pakistan_flights',
+    label: 'وصول رحلات باكستان إلى مكة المكرمة',
+    desc:  'تقويم حراري يعرض وصول رحلات الحجاج الباكستانيين — بيانات فعلية من الجدول الرسمي',
+    icon:  '✈️',
+    file:  '/reports/pakistan_flights.html'
   }
 ];
 
