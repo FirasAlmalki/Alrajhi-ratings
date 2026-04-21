@@ -140,6 +140,13 @@ document.getElementById('kpi-avg').textContent=fmt(META.avg_daily);
   const h=HIJRI_DAY[META.peak_iso]||'';
   document.getElementById('kpi-peak-date').textContent=g+(h?' / '+h.split(' ').slice(0,2).join(' '):'');
 })();
+// Hijri 1447: 1 Dhul Qa'dah = Apr 18, 1 Dhul Hijjah = May 18
+const H_DQ=new Date('2026-04-18T00:00:00'),H_DH=new Date('2026-05-18T00:00:00');
+const MH_PAK=['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+function toHijriPak(iso){const d=new Date(iso+'T00:00:00'),ms=86400000;
+  if(d>=H_DH)return(Math.floor((d-H_DH)/ms)+1)+' '+MH_PAK[11]+' 1447';
+  return(Math.floor((d-H_DQ)/ms)+1)+' '+MH_PAK[10]+' 1447';}
+Object.keys(DAY_DATA).forEach(iso=>{HIJRI_DAY[iso]=toHijriPak(iso);});
 const maxCount=Math.max(...Object.values(DAY_DATA).map(v=>v.pilgrims));
 function heatClass(n){
   if(!n)return'';const r=n/maxCount;
@@ -197,14 +204,13 @@ function openModal(iso){
       <div class="grp-header">
         <div class="grp-top">
           <span class="grp-code">${g.group_code}</span>
-          <span class="grp-flight">✈ ${g.flight}</span>
           <span class="grp-from">من: ${g.from_city}</span>
           <span class="grp-arrow">▼</span>
         </div>
         <div class="grp-meta">
-          <span class="chip">🏠 عمارة ${g.building}</span>
-          <span class="chip">👥 فريق ${g.team}</span>
-          <span class="chip">🕌 ${fmt(g.pilgrims)} حاج</span>
+          <span class="chip">عمارة ${g.building}</span>
+          <span class="chip">فريق ${g.team}</span>
+          <span class="chip">${fmt(g.pilgrims)} حاج</span>
           ${g.district?`<span class="chip">📍 ${g.district}</span>`:''}
         </div>
       </div>

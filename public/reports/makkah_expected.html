@@ -205,12 +205,12 @@ function splitCSVLine(line){
 }
 
 
-// Hijri 1447 — verified: Apr 25 = 1 Dhul Qaʿdah
-// Dhul Qaʿdah = 30 days → 1 Dhul Hijjah = May 25, 2026
+// Hijri 1447: 1 Dhul Qa'dah = Apr 18 (verified: Apr 26 = 9 Dhul Qa'dah)
+// Dhul Qa'dah = 30 days → 1 Dhul Hijjah = May 18, 2026
 const MONTHS_H = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة',
                   'رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
-const H_DHULQADAH  = new Date('2026-04-25T00:00:00');
-const H_DHULHIJJAH = new Date('2026-05-25T00:00:00');
+const H_DHULQADAH  = new Date('2026-04-18T00:00:00');
+const H_DHULHIJJAH = new Date('2026-05-18T00:00:00');
 function toHijriLabel(d){
   const ms = 86400000;
   if(d >= H_DHULHIJJAH) return (Math.floor((d-H_DHULHIJJAH)/ms)+1)+' '+MONTHS_H[11]+' 1447';
