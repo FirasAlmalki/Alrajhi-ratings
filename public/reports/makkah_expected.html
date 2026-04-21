@@ -278,8 +278,7 @@ function fmt(n){ return n.toLocaleString('en-US'); }
 
 
 // ── Heat scale ────────────────────────────────────────────────────────────────
-const counts = Object.values(DAY_DATA).map(v=>v.pilgrims);
-const maxCount = Math.max(...counts);
+let maxCount = 1;
 function heatClass(n){
   if(!n) return '';
   const r = n / maxCount;
@@ -416,6 +415,7 @@ function toggleGrpCard(el){
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 function initUI(){
+  maxCount = Math.max(...Object.values(DAY_DATA).map(v=>v.pilgrims)) || 1;
   // KPIs
   document.getElementById('hdr-total').textContent   = fmt(META.total);
   document.getElementById('kpi-total').textContent   = fmt(META.total);
