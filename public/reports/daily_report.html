@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إنشاء التقارير — إدارة الامتثال والالتزام</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#1B3A6B;--deep-navy:#0C2550;--gold:#C9A84C;
+  --text-light:#F5F0E8;--text-muted:#8AADDA;
+  --card-bg:#1B2535;--card-border:#2E3D50;--dark-bg:#0F1923;
+  --green:#4CAF8A;--red:#e74c3c;
+}
+body{font-family:'Tajawal',sans-serif;background:var(--dark-bg);color:var(--text-light);min-height:100vh;direction:rtl;}
+.app-header{background:var(--deep-navy);border-bottom:2px solid var(--gold);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.app-title{font-size:1rem;font-weight:700;color:var(--gold);}
+.app-sub{font-size:0.72rem;color:var(--text-muted);margin-top:2px;}
+.main{max-width:900px;margin:0 auto;padding:20px 16px 80px;}
+
+/* Cards */
+.card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:18px;margin-bottom:14px;}
+.card-title{font-size:0.95rem;font-weight:700;color:var(--gold);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--card-border);}
+
+/* Form */
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:0.75rem;color:var(--text-muted);font-weight:600;}
+.form-control{background:var(--deep-navy);border:1px solid var(--card-border);border-radius:8px;padding:8px 11px;color:var(--text-light);font-family:'Tajawal',sans-serif;font-size:0.87rem;outline:none;direction:rtl;width:100%;}
+.form-control:focus{border-color:var(--gold);}
+.form-control:disabled{opacity:.55;cursor:not-allowed;}
+textarea.form-control{resize:vertical;min-height:56px;}
+.period-display{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:8px 11px;color:var(--gold);font-weight:700;font-size:0.9rem;min-height:36px;display:flex;align-items:center;}
+
+/* Template selector */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.tpl-btn{background:var(--card-bg);border:2px solid var(--card-border);border-radius:12px;padding:20px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;user-select:none;}
+.tpl-btn:hover{border-color:rgba(201,168,76,.4);}
+.tpl-btn.active{border-color:var(--gold);background:rgba(201,168,76,.07);}
+.tpl-icon{font-size:1.8rem;margin-bottom:8px;}
+.tpl-name{font-size:0.92rem;font-weight:700;color:var(--text-light);}
+.tpl-desc{font-size:0.72rem;color:var(--text-muted);margin-top:4px;line-height:1.4;}
+
+/* Section cards */
+.section-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;margin-bottom:10px;}
+.section-card.open{border-color:rgba(201,168,76,.4);}
+.section-hdr{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-radius:12px;}
+.section-hdr:hover{background:rgba(255,255,255,.02);}
+.section-card.open .section-hdr{border-radius:12px 12px 0 0;}
+.section-title{font-size:0.92rem;font-weight:700;color:var(--gold);}
+.section-count{background:rgba(201,168,76,.15);color:var(--gold);border-radius:20px;padding:1px 10px;font-size:0.72rem;font-weight:700;margin-right:8px;}
+.section-arrow{color:var(--text-muted);font-size:11px;transition:transform .2s;}
+.section-card.open .section-arrow{transform:rotate(180deg);}
+.section-body{display:none;padding:14px 16px;border-top:1px solid var(--card-border);}
+.section-card.open .section-body{display:block;}
+
+/* Center select box */
+.csel-box{background:rgba(255,255,255,.02);border:1px solid var(--card-border);border-radius:10px;padding:12px 14px;margin-bottom:12px;}
+.csel-box-hdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.csel-box-title{font-size:0.8rem;font-weight:700;color:var(--text-muted);flex:1;}
+.csel-badge{background:rgba(201,168,76,.15);color:var(--gold);border-radius:20px;padding:1px 9px;font-size:0.7rem;font-weight:700;}
+.csel-btn{background:rgba(255,255,255,.06);border:1px solid var(--card-border);border-radius:6px;color:var(--text-muted);font-family:'Tajawal',sans-serif;font-size:0.72rem;padding:3px 10px;cursor:pointer;}
+.csel-btn:hover{border-color:var(--gold);color:var(--gold);}
+.filter-checklist{display:flex;flex-wrap:wrap;gap:6px;}
+.filter-item{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--card-border);border-radius:8px;padding:5px 10px;cursor:pointer;transition:border-color .15s;}
+.filter-item:hover{border-color:rgba(201,168,76,.4);}
+.filter-item input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;flex-shrink:0;cursor:pointer;}
+.filter-item label{font-size:12px;color:var(--text-light);cursor:pointer;line-height:1.3;}
+
+/* Entry card */
+.ecard{border:1px solid var(--card-border);border-radius:10px;margin-bottom:8px;overflow:hidden;}
+.ecard-hdr{display:flex;align-items:center;gap:10px;padding:9px 14px;background:rgba(255,255,255,.025);border-bottom:1px solid var(--card-border);}
+.ecard-num{background:rgba(201,168,76,.15);color:var(--gold);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;flex-shrink:0;}
+.ecard-title{font-size:0.87rem;font-weight:700;color:var(--text-light);}
+.ecard-body{padding:12px 14px;}
+.radio-row{display:flex;gap:14px;align-items:center;padding:5px 0;}
+.radio-row label{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:0.83rem;}
+.notes-expand{display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--card-border);}
+.notes-expand.show{display:block;}
+
+/* Presence table */
+.pres-table{width:100%;border-collapse:collapse;}
+.pres-table th{font-size:0.75rem;color:var(--text-muted);padding:7px 10px;text-align:right;border-bottom:1px solid var(--card-border);}
+.pres-table td{padding:7px 10px;border-bottom:1px solid rgba(46,61,80,.5);font-size:0.82rem;vertical-align:top;}
+.pres-table tr:last-child td{border-bottom:none;}
+.pres-name{font-weight:600;color:var(--text-light);}
+.pres-type-badge{font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:20px;margin-right:6px;}
+.badge-center{background:rgba(138,173,218,.12);color:var(--text-muted);}
+.badge-dept{background:rgba(201,168,76,.12);color:var(--gold);}
+.pres-radio{display:flex;gap:10px;}
+.pres-radio label{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.8rem;}
+.pres-note-row{margin-top:6px;display:none;}
+.pres-note-row.show{display:block;}
+
+/* Action bar */
+.action-bar{position:fixed;bottom:0;left:0;right:0;background:var(--deep-navy);border-top:2px solid var(--gold);padding:10px 20px;display:flex;gap:10px;justify-content:flex-end;z-index:100;}
+.btn{padding:9px 20px;border-radius:9px;font-family:'Tajawal',sans-serif;font-size:0.87rem;font-weight:700;cursor:pointer;border:none;transition:background .15s;}
+.btn-gold{background:rgba(201,168,76,.18);border:1px solid rgba(201,168,76,.4);color:var(--gold);}
+.btn-gold:hover{background:rgba(201,168,76,.3);}
+.btn-green{background:rgba(76,175,138,.15);border:1px solid rgba(76,175,138,.35);color:var(--green);}
+.btn-green:hover{background:rgba(76,175,138,.28);}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* Toast */
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:10px;font-size:0.88rem;font-weight:600;z-index:9999;display:none;white-space:nowrap;}
+.toast.show{display:block;animation:toastIn .25s ease;}
+.toast.success{background:rgba(76,175,138,.2);border:1px solid rgba(76,175,138,.4);color:var(--green);}
+.toast.error{background:rgba(192,57,43,.2);border:1px solid rgba(192,57,43,.4);color:var(--red);}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Print */
+@media print{
+  .no-print,.action-bar,.toast{display:none!important;}
+  body{background:#fff;color:#000;}
+  @page{size:A4;margin:15mm 12mm;}
+  .pdoc{font-family:'Tajawal',sans-serif;direction:rtl;font-size:10pt;color:#000;}
+  .phdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:3px solid #1B3A6B;}
+  .plogo{font-size:13pt;font-weight:800;color:#1B3A6B;}
+  .plogo-en{font-size:8pt;color:#555;}
+  .ptitle-main{font-size:15pt;font-weight:800;color:#1B3A6B;text-decoration:underline;}
+  .ptitle-sub{font-size:9pt;color:#444;}
+  .pmeta-row{display:flex;gap:16px;margin-bottom:12px;font-size:9pt;border-bottom:1px solid #C9A84C;padding-bottom:8px;}
+  .pmeta-lbl{color:#666;}.pmeta-val{font-weight:700;color:#1B3A6B;}
+  .psec{margin-bottom:12px;page-break-inside:avoid;}
+  .psec-title{background:#1B3A6B;color:#fff;text-align:center;font-size:9.5pt;font-weight:700;padding:4px 8px;}
+  .ptable{width:100%;border-collapse:collapse;font-size:8.5pt;}
+  .ptable th{background:#C9A84C;color:#1B3A6B;font-weight:700;text-align:center;padding:4px;border:1px solid #1B3A6B;}
+  .ptable td{text-align:center;padding:4px;border:1px solid #bbb;}
+  .ptable tr:nth-child(even) td{background:#f7f7f7;}
+}
+.print-only{display:none;}
+</style>
+</head>
+<body>
+
+<div id="screenView">
+<div class="app-header no-print">
+  <div>
+    <div class="app-title">📋 إنشاء التقارير</div>
+    <div class="app-sub" id="userBadge">إدارة الامتثال والالتزام</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ── البيانات الأساسية ── -->
+  <div class="card">
+    <div class="card-title">البيانات الأساسية</div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">الموقع</div>
+        <select class="form-control" id="locSel" onchange="onLocChange()">
+          <option value="">— اختر الموقع —</option>
+          <option>مكة المكرمة</option>
+          <option>المدينة المنورة</option>
+          <option>عرفة</option>
+          <option>منى</option>
+          <option>مزدلفة</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">المشرف</div>
+        <select class="form-control" id="supSel" onchange="onSupChange()" disabled>
+          <option value="">— اختر الموقع أولاً —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">الفترة</div>
+        <div class="period-display" id="periodDisplay">—</div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">التاريخ والوقت</div>
+        <input type="datetime-local" class="form-control" id="reportDatetime">
+      </div>
+    </div>
+  </div>
+
+  <!-- ── اختيار القالب ── -->
+  <div id="tplSection" style="display:none">
+    <div class="card-title" style="color:var(--text-muted);font-size:0.8rem;margin-bottom:10px">اختر نوع التقرير</div>
+    <div class="tpl-grid">
+      <div class="tpl-btn" id="tplDaily" onclick="selectTemplate('daily')">
+        <div class="tpl-icon">📋</div>
+        <div class="tpl-name">التقرير اليومي</div>
+        <div class="tpl-desc">استقبال · مغادرة · جولات ميدانية · محاضر</div>
+      </div>
+      <div class="tpl-btn" id="tplPresence" onclick="selectTemplate('presence')">
+        <div class="tpl-icon">✅</div>
+        <div class="tpl-name">التواجد</div>
+        <div class="tpl-desc">جميع المراكز والإدارات — تحقق من الحضور</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── قالب التقرير اليومي ── -->
+  <div id="dailyTemplate" style="display:none">
+    <div id="dailySections"></div>
+  </div>
+
+  <!-- ── قالب التواجد ── -->
+  <div id="presenceTemplate" style="display:none">
+    <div class="card">
+      <div class="card-title">✅ التواجد — جميع المراكز والإدارات</div>
+      <div id="presenceEntries"></div>
+    </div>
+  </div>
+
+</div><!-- main -->
+
+<div class="action-bar no-print">
+  <button class="btn btn-gold" onclick="exportPDF()">📄 تصدير PDF</button>
+  <button class="btn btn-green" id="btnSave" onclick="saveReport()">💾 حفظ التقرير</button>
+</div>
+</div><!-- screenView -->
+
+<div class="print-only" id="printView"></div>
+<div class="toast no-print" id="toast"></div>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────────────────────
+const SB_URL = 'https://ectajbmqxucrrbyymbbp.supabase.co';
+const SB_KEY = 'sb_publishable_MZfGz7I6NLLR95_DRcM_zQ_zsH8JRSn';
+
+const DAILY_SECTIONS = [
+  {key:'reception',   label:'الاستقبال',          icon:'🟢'},
+  {key:'departure',   label:'المغادرة',            icon:'🔴'},
+  {key:'field_tours', label:'الجولات الميدانية',   icon:'🚶'},
+  {key:'records',     label:'المحاضر والملاحظات',  icon:'📋'},
+];
+
+const SUPERVISORS_META = [
+  {name:'يوسف الهذلي',        period:'الأولى',   location:'مكة المكرمة'},
+  {name:'فايز الشريف',         period:'الثانية',  location:'مكة المكرمة'},
+  {name:'خالد عليوة',          period:'الثالثة',  location:'مكة المكرمة'},
+  {name:'رامي الغامدي',        period:'المشاعر',  location:'عرفة'},
+  {name:'رامي الغامدي',        period:'المشاعر',  location:'منى'},
+  {name:'رامي الغامدي',        period:'المشاعر',  location:'مزدلفة'},
+  {name:'وراد سمان',           period:'8ص – 4ع',  location:'المدينة المنورة'},
+  {name:'عبد المجيد الصخيري', period:'4ع – 12م', location:'المدينة المنورة'},
+  {name:'فترة ثانية',          period:'12م – 8ص', location:'المدينة المنورة'},
+];
+
+const _MAKKAH_CENTERS = [
+  'مركز ضيافة مصر رقم 101','مركز ضيافة مصر رقم 102','مركز ضيافة مصر رقم 103',
+  'مركز ضيافة مصر رقم 105','مركز ضيافة مصر رقم 106','مركز ضيافة مصر رقم 107',
+  'مركز ضيافة مصر رقم 108','مركز ضيافة مصر رقم 109','مركز ضيافة مصر رقم 110',
+  'مركز ضيافة مصر رقم 112','مركز ضيافة مصر رقم 113',
+  'مركز ضيافة باكستان رقم 120','مركز ضيافة باكستان رقم 121','مركز ضيافة باكستان رقم 122',
+  'مركز ضيافة باكستان رقم 123','مركز ضيافة باكستان رقم 124','مركز ضيافة باكستان رقم 125',
+  'مركز ضيافة باكستان رقم 126','مركز ضيافة باكستان رقم 127','مركز ضيافة باكستان رقم 128',
+  'مركز ضيافة باكستان رقم 129','مركز ضيافة باكستان رقم 130','مركز ضيافة باكستان رقم 131',
+  'مركز ضيافة باكستان رقم 132','مركز ضيافة باكستان رقم 133','مركز ضيافة باكستان رقم 134',
+  'مركز ضيافة باكستان رقم 135','مركز ضيافة باكستان رقم 136','مركز ضيافة باكستان رقم 137',
+  'مركز ضيافة باكستان رقم 138','مركز ضيافة باكستان رقم 139','مركز ضيافة باكستان رقم 140',
+  'مركز ضيافة باكستان رقم 141','مركز ضيافة باكستان رقم 142','مركز ضيافة باكستان رقم 143',
+  'مركز ضيافة باكستان رقم 144','مركز ضيافة باكستان رقم 145','مركز ضيافة باكستان رقم 146',
+  'مركز ضيافة باكستان رقم 147','مركز ضيافة باكستان رقم 148',
+  'مركز ضيافة النيجر رقم 150','مركز ضيافة النيجر رقم 151',
+  'مركز ضيافة النيجر رقم 152','مركز ضيافة النيجر رقم 153',
+];
+
+const CENTERS_BY_LOC = {
+  'مكة المكرمة': _MAKKAH_CENTERS,
+  'عرفة':        _MAKKAH_CENTERS,
+  'منى':         _MAKKAH_CENTERS,
+  'مزدلفة':      _MAKKAH_CENTERS,
+  'المدينة المنورة': [
+    'مركز ضيافة باكستان 1',
+    'مركز ضيافة باكستان 2',
+    'مركز ضيافة مصر',
+    'مركز ضيافة النيجر',
+  ],
+};
+
+const DEPARTMENTS = [
+  'اداره الخدمات العامه',
+  'اداره المشاعر المقدسة',
+  'ادارة الاسكان',
+  'ادارة نسك',
+  'ادارة عمليات الحج المالية',
+  'ادارة الموارد البشرية و الشؤون الادارية',
+  'ادارة تقنية المعلومات',
+  'ادارة الاستقبال',
+  'ادارة النقل والتفويج',
+  'ادارة خدمة العملاء',
+  'ادارة الجوازات',
+  'ادارة الاستعداد المسبق',
+];
+
+// ── URL params ────────────────────────────────────────────────────────────────
+const _P         = new URLSearchParams(location.search);
+const _userName  = _P.get('name')     ? decodeURIComponent(_P.get('name'))     : '';
+const _userRole  = _P.get('role')     || 'supervisor';
+const _secParam  = _P.get('sections') ? decodeURIComponent(_P.get('sections')) : 'all';
+const _allowedSections = _secParam === 'all' ? null : new Set(_secParam.split(','));
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const S = {
+  location: '', supervisor: '', period: '',
+  reportType: null,  // 'daily' | 'presence'
+  daily: { reception:[], departure:[], field_tours:[], records:[] },
+  presence: [],      // [{center, type:'center'|'dept', isPresent, hasNotes, notes}]
+  _presetUser: _userName,
+};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(function init(){
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('reportDatetime').value = now.toISOString().slice(0,16);
+  if(_userName) document.getElementById('userBadge').textContent = _userName;
+})();
+
+// ── Location change ───────────────────────────────────────────────────────────
+function onLocChange(){
+  S.location = document.getElementById('locSel').value;
+  S.reportType = null;
+  S.daily = { reception:[], departure:[], field_tours:[], records:[] };
+  S.presence = [];
+  document.getElementById('tplSection').style.display = 'none';
+  document.getElementById('dailyTemplate').style.display = 'none';
+  document.getElementById('presenceTemplate').style.display = 'none';
+  document.getElementById('tplDaily').classList.remove('active');
+  document.getElementById('tplPresence').classList.remove('active');
+
+  const supSel = document.getElementById('supSel');
+  supSel.disabled = !S.location;
+  supSel.innerHTML = '<option value="">— اختر المشرف —</option>';
+  if(!S.location) return;
+
+  const sups = SUPERVISORS_META.filter(s=>s.location===S.location);
+  sups.forEach(s=>{
+    const o = document.createElement('option');
+    o.value = s.name; o.textContent = `${s.name}`;
+    supSel.appendChild(o);
+  });
+
+  // Auto-select if preset from URL
+  if(S._presetUser){
+    const opt = Array.from(supSel.options).find(o=>o.value===S._presetUser);
+    if(opt){ supSel.value=S._presetUser; onSupChange(); }
+  }
+}
+
+function onSupChange(){
+  const name = document.getElementById('supSel').value;
+  S.supervisor = name;
+  const meta = SUPERVISORS_META.find(s=>s.name===name);
+  S.period = meta ? meta.period : '';
+  document.getElementById('periodDisplay').textContent = S.period || '—';
+  document.getElementById('tplSection').style.display = (name && S.location) ? 'block' : 'none';
+}
+
+// ── Template selection ────────────────────────────────────────────────────────
+function selectTemplate(type){
+  if(!S.location||!S.supervisor){ toast('اختر الموقع والمشرف أولاً','error'); return; }
+  S.reportType = type;
+  document.getElementById('tplDaily').classList.toggle('active', type==='daily');
+  document.getElementById('tplPresence').classList.toggle('active', type==='presence');
+  document.getElementById('dailyTemplate').style.display   = type==='daily'    ? 'block' : 'none';
+  document.getElementById('presenceTemplate').style.display = type==='presence' ? 'block' : 'none';
+
+  if(type==='daily')    renderDailyTemplate();
+  if(type==='presence') renderPresenceTemplate();
+}
+
+// ── Daily template ────────────────────────────────────────────────────────────
+function renderDailyTemplate(){
+  const allowed = sec =>
+    !_allowedSections || _allowedSections.has(sec.key) || _allowedSections.has('daily');
+  const sections = DAILY_SECTIONS.filter(allowed);
+
+  document.getElementById('dailySections').innerHTML = sections.map(sec=>`
+    <div class="section-card open" id="dsc_${sec.key}">
+      <div class="section-hdr" onclick="toggleDailySec('${sec.key}')">
+        <span>
+          <span class="section-title">${sec.icon} ${sec.label}</span>
+          <span class="section-count" id="dcnt_${sec.key}">${S.daily[sec.key]?.length||0}</span>
+        </span>
+        <span class="section-arrow" style="transform:rotate(180deg)">▼</span>
+      </div>
+      <div class="section-body" id="dbody_${sec.key}" style="display:block">
+        <div class="csel-box">
+          <div class="csel-box-hdr">
+            <span class="csel-box-title">📍 اختر المراكز</span>
+            <span class="csel-badge" id="dcbadge_${sec.key}">0</span>
+            <button class="csel-btn" onclick="dSelectAll('${sec.key}')">تحديد الكل</button>
+            <button class="csel-btn" onclick="dClearAll('${sec.key}')">إلغاء الكل</button>
+          </div>
+          <div class="filter-checklist" id="dclist_${sec.key}"></div>
+        </div>
+        <div id="dentries_${sec.key}"></div>
+      </div>
+    </div>`).join('');
+
+  sections.forEach(sec=>{
+    renderDailyCenterSel(sec.key);
+    renderDailyEntries(sec.key);
+  });
+}
+
+function toggleDailySec(key){
+  const card  = document.getElementById(`dsc_${key}`);
+  const body  = document.getElementById(`dbody_${key}`);
+  const arrow = card?.querySelector('.section-arrow');
+  const open  = card?.classList.toggle('open');
+  if(body)  body.style.display  = open ? 'block' : 'none';
+  if(arrow) arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function renderDailyCenterSel(key){
+  const centers = CENTERS_BY_LOC[S.location]||[];
+  const selected = new Set((S.daily[key]||[]).map(e=>e.center));
+  const list = document.getElementById(`dclist_${key}`);
+  if(!list) return;
+  if(!centers.length){
+    list.innerHTML=`<span style="color:var(--text-muted);font-size:0.8rem">لا توجد مراكز لهذا الموقع</span>`;
+    return;
+  }
+  list.innerHTML = centers.map((c,i)=>`
+    <div class="filter-item">
+      <input type="checkbox" id="dc_${key}_${i}" data-c="${c}" ${selected.has(c)?'checked':''}
+        onchange="dToggleCenter('${key}',this.dataset.c,this.checked)">
+      <label for="dc_${key}_${i}">${c}</label>
+    </div>`).join('');
+}
+
+function _newEntry(key, center){
+  const base = {center, hasNotes:false, notes:''};
+  if(key==='reception'||key==='departure') Object.assign(base,{pilgrimCount:'',nationality:''});
+  return base;
+}
+function dToggleCenter(key, center, checked){
+  if(!S.daily[key]) S.daily[key]=[];
+  if(checked){
+    if(!S.daily[key].find(e=>e.center===center))
+      S.daily[key].push(_newEntry(key, center));
+  } else {
+    S.daily[key] = S.daily[key].filter(e=>e.center!==center);
+  }
+  updateDailyCnt(key);
+  renderDailyEntries(key);
+}
+function dSelectAll(key){
+  const centers = CENTERS_BY_LOC[S.location]||[];
+  const existing = new Map((S.daily[key]||[]).map(e=>[e.center,e]));
+  S.daily[key] = centers.map(c=>existing.get(c)||_newEntry(key,c));
+  renderDailyCenterSel(key); updateDailyCnt(key); renderDailyEntries(key);
+}
+function dClearAll(key){
+  S.daily[key]=[]; renderDailyCenterSel(key); updateDailyCnt(key); renderDailyEntries(key);
+}
+function updateDailyCnt(key){
+  const n = S.daily[key]?.length||0;
+  const cnt = document.getElementById(`dcnt_${key}`);
+  const badge = document.getElementById(`dcbadge_${key}`);
+  if(cnt) cnt.textContent = n;
+  if(badge) badge.textContent = n;
+}
+
+function renderDailyEntries(key){
+  const container = document.getElementById(`dentries_${key}`);
+  if(!container) return;
+  const entries = S.daily[key]||[];
+  if(!entries.length){ container.innerHTML=''; return; }
+  const isPilgrim = key==='reception'||key==='departure';
+  container.innerHTML = entries.map((e,i)=>`
+    <div class="ecard">
+      <div class="ecard-hdr">
+        <div class="ecard-num">${i+1}</div>
+        <span class="ecard-title">${e.center||'—'}</span>
+      </div>
+      <div class="ecard-body">
+        ${isPilgrim?`
+        <div class="form-row" style="margin-bottom:10px">
+          <div class="form-group">
+            <div class="form-label">عدد الحجاج</div>
+            <input type="number" min="0" class="form-control" placeholder="0"
+              value="${e.pilgrimCount||''}"
+              oninput="dSetField('${key}',${i},'pilgrimCount',this.value)">
+          </div>
+          <div class="form-group">
+            <div class="form-label">الجنسية</div>
+            <input type="text" class="form-control" placeholder="مثال: مصري"
+              value="${e.nationality||''}"
+              oninput="dSetField('${key}',${i},'nationality',this.value)">
+          </div>
+        </div>`:''}
+        <div class="form-label" style="margin-bottom:4px">هل توجد ملاحظات؟</div>
+        <div class="radio-row">
+          <label><input type="radio" name="dhn_${key}_${i}" ${e.hasNotes?'checked':''}
+            onchange="dSetHasNotes('${key}',${i},true)"> نعم</label>
+          <label><input type="radio" name="dhn_${key}_${i}" ${!e.hasNotes?'checked':''}
+            onchange="dSetHasNotes('${key}',${i},false)"> لا</label>
+        </div>
+        <div class="notes-expand ${e.hasNotes?'show':''}" id="dne_${key}_${i}">
+          <textarea class="form-control" placeholder="اكتب الملاحظة هنا..."
+            oninput="dSetField('${key}',${i},'notes',this.value)">${e.notes||''}</textarea>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function dSetHasNotes(key,idx,val){
+  if(S.daily[key]?.[idx]) S.daily[key][idx].hasNotes=val;
+  const ne = document.getElementById(`dne_${key}_${idx}`);
+  if(ne) ne.className = `notes-expand ${val?'show':''}`;
+}
+function dSetField(key,idx,field,val){
+  if(S.daily[key]?.[idx]) S.daily[key][idx][field]=val;
+}
+
+// ── Presence template ─────────────────────────────────────────────────────────
+function renderPresenceTemplate(){
+  const centers = (CENTERS_BY_LOC[S.location]||[]).map(c=>({center:c,type:'center',isPresent:false,hasNotes:false,notes:''}));
+  const depts   = S.location==='مكة المكرمة'
+    ? DEPARTMENTS.map(d=>({center:d,type:'dept',isPresent:false,hasNotes:false,notes:''}))
+    : [];
+  S.presence = [...centers, ...depts];
+  rebuildPresenceUI();
+}
+
+function rebuildPresenceUI(){
+  const container = document.getElementById('presenceEntries');
+  if(!S.presence.length){
+    container.innerHTML=`<div style="color:var(--text-muted);font-size:0.85rem;padding:8px 0">اختر الموقع أولاً</div>`;
+    return;
+  }
+  container.innerHTML = `<table class="pres-table">
+    <thead><tr>
+      <th>#</th>
+      <th>الاسم</th>
+      <th>هل الأعضاء متواجدين؟</th>
+      <th>ملاحظات؟</th>
+    </tr></thead>
+    <tbody>${S.presence.map((e,i)=>presRow(e,i)).join('')}</tbody>
+  </table>`;
+}
+
+function presRow(e,i){
+  const badge = e.type==='dept'
+    ? `<span class="pres-type-badge badge-dept">إدارة</span>`
+    : `<span class="pres-type-badge badge-center">مركز</span>`;
+  return `<tr>
+    <td style="color:var(--text-muted);font-size:0.75rem">${i+1}</td>
+    <td><span class="pres-name">${e.center}</span>${badge}</td>
+    <td>
+      <div class="pres-radio">
+        <label><input type="radio" name="pip_${i}" ${e.isPresent?'checked':''}
+          onchange="pSetPresent(${i},true)"> نعم</label>
+        <label><input type="radio" name="pip_${i}" ${!e.isPresent?'checked':''}
+          onchange="pSetPresent(${i},false)"> لا</label>
+      </div>
+    </td>
+    <td>
+      <div class="pres-radio">
+        <label><input type="radio" name="phn_${i}" ${e.hasNotes?'checked':''}
+          onchange="pSetHasNotes(${i},true)"> نعم</label>
+        <label><input type="radio" name="phn_${i}" ${!e.hasNotes?'checked':''}
+          onchange="pSetHasNotes(${i},false)"> لا</label>
+      </div>
+      <div class="pres-note-row ${e.hasNotes?'show':''}" id="pnr_${i}">
+        <textarea class="form-control" style="margin-top:4px" placeholder="الملاحظة..."
+          oninput="pSetField(${i},'notes',this.value)">${e.notes||''}</textarea>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function pSetPresent(idx,val){ if(S.presence[idx]) S.presence[idx].isPresent=val; }
+function pSetHasNotes(idx,val){
+  if(S.presence[idx]) S.presence[idx].hasNotes=val;
+  const el=document.getElementById(`pnr_${idx}`);
+  if(el) el.className=`pres-note-row ${val?'show':''}`;
+}
+function pSetField(idx,field,val){ if(S.presence[idx]) S.presence[idx][field]=val; }
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+async function saveReport(){
+  if(!S.location||!S.supervisor){ toast('اختر الموقع والمشرف أولاً','error'); return; }
+  if(!S.reportType){ toast('اختر نوع التقرير','error'); return; }
+  const btn=document.getElementById('btnSave');
+  btn.disabled=true; btn.textContent='⏳ جاري الحفظ...';
+  try{
+    const dt = document.getElementById('reportDatetime').value;
+    const reportDate = dt ? new Date(dt).toISOString() : new Date().toISOString();
+    const r = await sbPost('daily_reports',{
+      location:S.location, supervisor:S.supervisor, period:S.period,
+      report_date:reportDate, report_type:S.reportType
+    },'return=representation');
+    const reportId = r[0].id;
+    const entries = [];
+
+    if(S.reportType==='daily'){
+      DAILY_SECTIONS.forEach(sec=>{
+        const isPilgrim = sec.key==='reception'||sec.key==='departure';
+        (S.daily[sec.key]||[]).forEach((e,i)=>{
+          entries.push({
+            report_id:reportId, section:sec.key, center:e.center,
+            has_notes:e.hasNotes||false, notes:e.notes||null,
+            pilgrim_count: isPilgrim && e.pilgrimCount!=='' ? Number(e.pilgrimCount)||null : null,
+            nationality:   isPilgrim ? (e.nationality||null) : null,
+            action_taken:null, result:null, sort_order:i
+          });
+        });
+      });
+    } else {
+      S.presence.forEach((e,i)=>{
+        entries.push({
+          report_id:reportId, section:'presence', center:e.center,
+          has_notes:e.isPresent||false,          // isPresent stored in has_notes
+          notes:e.notes||null,
+          action_taken:e.type,                   // 'center' or 'dept' stored in action_taken
+          has_madar_report:e.hasNotes||false,     // hasNote stored in has_madar_report
+          sort_order:i
+        });
+      });
+    }
+    if(entries.length) await sbPost('report_entries',entries,'return=minimal');
+    toast('✓ تم حفظ التقرير بنجاح','success');
+  }catch(err){ toast('خطأ: '+err.message,'error'); }
+  finally{ btn.disabled=false; btn.textContent='💾 حفظ التقرير'; }
+}
+
+async function sbPost(table,body,prefer){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`,{
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':prefer},
+    body:JSON.stringify(body)
+  });
+  if(prefer==='return=minimal') return;
+  return r.json();
+}
+
+// ── PDF Export ────────────────────────────────────────────────────────────────
+function exportPDF(){
+  if(!S.location||!S.supervisor||!S.reportType){ toast('أكمل البيانات قبل التصدير','error'); return; }
+  const dt = document.getElementById('reportDatetime').value;
+  const d = dt ? new Date(dt) : new Date();
+  const dateStr = d.toLocaleDateString('ar-SA');
+  const timeStr = d.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+
+  let sectionsHtml = '';
+
+  if(S.reportType==='daily'){
+    DAILY_SECTIONS.forEach(sec=>{
+      const entries = S.daily[sec.key]||[];
+      if(!entries.length) return;
+      const isPilgrim = sec.key==='reception'||sec.key==='departure';
+      const thead = isPilgrim
+        ? '<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>الجنسية</th><th>الملاحظات</th>'
+        : '<th>#</th><th>المركز</th><th>الملاحظات</th>';
+      const rows = entries.map((e,i)=> isPilgrim ? `<tr>
+        <td>${i+1}</td><td>${e.center||'—'}</td>
+        <td>${e.pilgrimCount||'—'}</td><td>${e.nationality||'—'}</td>
+        <td>${e.hasNotes?(e.notes||'نعم'):'لا'}</td>
+      </tr>` : `<tr>
+        <td>${i+1}</td><td>${e.center||'—'}</td>
+        <td>${e.hasNotes?(e.notes||'نعم'):'لا'}</td>
+      </tr>`).join('');
+      sectionsHtml += `<div class="psec">
+        <div class="psec-title">${sec.icon} ${sec.label} (${entries.length})</div>
+        <table class="ptable"><thead><tr>${thead}</tr></thead>
+        <tbody>${rows}</tbody></table></div>`;
+    });
+  } else {
+    const rows = S.presence.map((e,i)=>`<tr>
+      <td>${i+1}</td>
+      <td>${e.center}</td>
+      <td>${e.type==='dept'?'إدارة':'مركز'}</td>
+      <td>${e.isPresent?'نعم':'لا'}</td>
+      <td>${e.hasNotes?(e.notes||'نعم'):'لا'}</td>
+    </tr>`).join('');
+    sectionsHtml = `<div class="psec">
+      <div class="psec-title">✅ التواجد</div>
+      <table class="ptable">
+        <thead><tr><th>#</th><th>الاسم</th><th>النوع</th><th>متواجدون</th><th>ملاحظات</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`;
+  }
+
+  const reportLabel = S.reportType==='daily' ? 'التقرير اليومي' : 'تقرير التواجد';
+  document.getElementById('printView').innerHTML = `
+    <div class="pdoc">
+      <div class="phdr">
+        <div><div class="plogo">الراجحي</div><div class="plogo-en">Al Rajhi</div></div>
+        <div style="text-align:center;flex:1;padding:0 16px">
+          <div class="ptitle-main">إدارة الامتثال والالتزام</div>
+          <div class="ptitle-sub">${reportLabel}</div>
+        </div>
+        <div style="text-align:left;font-size:8.5pt;color:#333">${dateStr}<br>${timeStr}</div>
+      </div>
+      <div class="pmeta-row">
+        <div><span class="pmeta-lbl">الموقع: </span><span class="pmeta-val">${S.location}</span></div>
+        <div><span class="pmeta-lbl">المشرف: </span><span class="pmeta-val">${S.supervisor}</span></div>
+        <div><span class="pmeta-lbl">الفترة: </span><span class="pmeta-val">${S.period}</span></div>
+      </div>
+      ${sectionsHtml||'<p style="color:#666;font-size:9pt">لا توجد بيانات</p>'}
+    </div>`;
+
+  document.getElementById('screenView').style.display='none';
+  document.getElementById('printView').style.display='block';
+  window.print();
+  document.getElementById('screenView').style.display='block';
+  document.getElementById('printView').style.display='none';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let _tt;
+function toast(msg,type='success'){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast show ${type}`;
+  clearTimeout(_tt); _tt=setTimeout(()=>el.className='toast',3500);
+}
+</script>
+</body>
+</html>

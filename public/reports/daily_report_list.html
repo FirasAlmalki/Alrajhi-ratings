@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سجل التقارير</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#1B3A6B;--deep-navy:#0C2550;--gold:#C9A84C;
+  --text-light:#F5F0E8;--text-muted:#8AADDA;
+  --card-bg:#1B2535;--card-border:#2E3D50;--dark-bg:#0F1923;
+  --green:#4CAF8A;--red:#e74c3c;
+}
+body{font-family:'Tajawal',sans-serif;background:var(--dark-bg);color:var(--text-light);min-height:100vh;direction:rtl;}
+.main{max-width:1100px;margin:0 auto;padding:20px 16px;}
+
+/* Header */
+.page-hdr{background:var(--deep-navy);border-bottom:2px solid var(--gold);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.page-hdr-title{font-size:1rem;font-weight:700;color:var(--gold);}
+.page-hdr-user{font-size:0.78rem;color:var(--text-muted);}
+.export-day-btn{padding:7px 14px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;border:none;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);color:var(--gold);transition:background .15s;}
+.export-day-btn:hover{background:rgba(201,168,76,.28);}
+
+/* Alert banner */
+.alert-banner{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.3);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:none;}
+.alert-banner-title{font-size:0.8rem;font-weight:700;color:#e74c3c;margin-bottom:8px;}
+.alert-item{font-size:0.78rem;color:#f0a899;padding:3px 0;display:flex;align-items:center;gap:6px;}
+.alert-item::before{content:'⚠️';flex-shrink:0;}
+
+/* Filter */
+.filter-bar{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;}
+.filter-group{display:flex;flex-direction:column;gap:4px;}
+.filter-label{font-size:0.72rem;color:var(--text-muted);font-weight:600;}
+.filter-input{background:var(--deep-navy);border:1px solid var(--card-border);border-radius:8px;padding:7px 10px;color:var(--text-light);font-family:'Tajawal',sans-serif;font-size:0.83rem;outline:none;}
+.filter-input:focus{border-color:var(--gold);}
+.filter-btn{padding:8px 16px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:0.83rem;font-weight:600;cursor:pointer;border:none;transition:background .15s;}
+.filter-apply{background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:var(--gold);}
+.filter-apply:hover{background:rgba(201,168,76,.25);}
+.filter-clear{background:rgba(255,255,255,.05);border:1px solid var(--card-border);color:var(--text-muted);}
+.filter-clear:hover{border-color:var(--gold);color:var(--gold);}
+
+/* Location group header */
+.loc-group-hdr{font-size:0.78rem;font-weight:700;color:var(--text-muted);padding:10px 4px 6px;letter-spacing:.03em;border-bottom:1px solid var(--card-border);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.loc-group{margin-bottom:22px;}
+
+/* Reports grid */
+.reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+.report-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:16px;transition:border-color .15s;}
+.report-card:hover{border-color:rgba(201,168,76,.3);}
+.report-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.report-card-date{font-size:0.82rem;color:var(--gold);font-weight:700;}
+.report-type-badge{font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);color:var(--gold);}
+.report-card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.meta-chip{background:rgba(255,255,255,.05);border-radius:6px;padding:3px 9px;font-size:0.73rem;color:var(--text-muted);}
+.meta-chip span{color:var(--text-light);font-weight:600;}
+.report-card-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.act-btn{flex:1;padding:7px 8px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;border:none;transition:background .15s;white-space:nowrap;}
+.act-view{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);color:var(--gold);}
+.act-view:hover{background:rgba(201,168,76,.22);}
+.act-pdf{background:rgba(76,175,138,.1);border:1px solid rgba(76,175,138,.25);color:var(--green);}
+.act-pdf:hover{background:rgba(76,175,138,.2);}
+.act-del{background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.2);color:var(--red);}
+.act-del:hover{background:rgba(192,57,43,.18);}
+
+/* Empty / loading / footer */
+.empty-state{text-align:center;padding:48px 0;color:var(--text-muted);}
+.empty-state div{font-size:2.5rem;margin-bottom:10px;}
+.loading{text-align:center;padding:32px;color:var(--text-muted);}
+.results-footer{text-align:center;padding:16px 0 4px;font-size:0.8rem;color:var(--text-muted);}
+.results-footer strong{color:var(--text-light);font-weight:700;}
+
+/* Modal shared */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:400;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;width:100%;display:flex;flex-direction:column;}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--card-border);}
+.modal-title{font-size:0.95rem;font-weight:700;color:var(--gold);}
+.modal-close{background:rgba(255,255,255,.07);border:1px solid var(--card-border);border-radius:6px;color:var(--text-muted);padding:4px 10px;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:0.8rem;}
+.modal-body{overflow-y:auto;padding:16px 18px;flex:1;}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--card-border);display:flex;gap:8px;justify-content:flex-end;}
+
+/* View modal */
+#viewModal .modal-box{max-width:760px;max-height:90vh;}
+.modal-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--card-border);}
+.modal-meta-item{display:flex;gap:5px;font-size:0.82rem;}
+.modal-meta-lbl{color:var(--text-muted);}
+.modal-meta-val{color:var(--text-light);font-weight:700;}
+.msec{margin-bottom:14px;}
+.msec-title{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:8px 8px 0 0;padding:8px 12px;font-size:0.85rem;font-weight:700;color:var(--gold);}
+.msec-table{width:100%;border-collapse:collapse;font-size:0.78rem;}
+.msec-table th{background:rgba(255,255,255,.05);color:var(--text-muted);padding:6px 8px;text-align:center;border:1px solid var(--card-border);}
+.msec-table td{padding:6px 8px;text-align:center;border:1px solid var(--card-border);color:var(--text-light);}
+.msec-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+
+/* Delete confirm modal */
+#deleteModal .modal-box{max-width:420px;}
+.del-info{font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;line-height:1.6;}
+.del-info strong{color:var(--text-light);}
+.del-pw-wrap{position:relative;}
+.del-pw-wrap input{width:100%;background:var(--deep-navy);border:1px solid var(--card-border);border-radius:8px;padding:9px 12px;color:var(--text-light);font-family:'Tajawal',sans-serif;font-size:0.9rem;outline:none;}
+.del-pw-wrap input:focus{border-color:var(--gold);}
+.del-err{font-size:0.78rem;color:var(--red);margin-top:8px;min-height:18px;}
+.btn-del-confirm{flex:1;padding:9px;background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.35);border-radius:8px;color:var(--red);font-family:'Tajawal',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;}
+.btn-del-confirm:hover{background:rgba(192,57,43,.28);}
+.btn-cancel{flex:1;padding:9px;background:rgba(255,255,255,.05);border:1px solid var(--card-border);border-radius:8px;color:var(--text-muted);font-family:'Tajawal',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;}
+.btn-cancel:hover{border-color:var(--gold);color:var(--gold);}
+
+/* Export day modal */
+#exportModal .modal-box{max-width:460px;}
+.exp-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.exp-label{font-size:0.75rem;color:var(--text-muted);font-weight:600;}
+.exp-select{background:var(--deep-navy);border:1px solid var(--card-border);border-radius:8px;padding:8px 11px;color:var(--text-light);font-family:'Tajawal',sans-serif;font-size:0.87rem;outline:none;width:100%;}
+.exp-select:focus{border-color:var(--gold);}
+.btn-export-go{flex:1;padding:9px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);border-radius:8px;color:var(--gold);font-family:'Tajawal',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;}
+.btn-export-go:hover{background:rgba(201,168,76,.28);}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:10px;font-size:0.88rem;font-weight:600;z-index:9999;display:none;white-space:nowrap;}
+.toast.show{display:block;animation:toastIn .25s ease;}
+.toast.success{background:rgba(76,175,138,.2);border:1px solid rgba(76,175,138,.4);color:var(--green);}
+.toast.error{background:rgba(192,57,43,.2);border:1px solid rgba(192,57,43,.4);color:var(--red);}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Print */
+@media print{
+  .no-print{display:none!important;}
+  body{background:white;color:#000;}
+  @page{size:A4;margin:15mm 12mm;}
+  .pdoc{font-family:'Tajawal',sans-serif;direction:rtl;color:#000;font-size:10pt;}
+  .phdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:3px solid #1B3A6B;}
+  .plogo{font-size:13pt;font-weight:800;color:#1B3A6B;}
+  .plogo-en{font-size:8pt;color:#555;}
+  .ptitle-main{font-size:15pt;font-weight:800;color:#1B3A6B;text-decoration:underline;}
+  .ptitle-sub{font-size:9pt;color:#444;}
+  .pmeta-row{display:flex;gap:18px;margin-bottom:12px;font-size:9pt;border-bottom:1px solid #C9A84C;padding-bottom:8px;}
+  .pmeta-lbl{color:#666;}.pmeta-val{font-weight:700;color:#1B3A6B;}
+  .preport-block{margin-bottom:18px;page-break-inside:avoid;}
+  .preport-hdr{background:#1B3A6B;color:#C9A84C;padding:5px 10px;font-size:9pt;font-weight:700;display:flex;justify-content:space-between;margin-bottom:4px;}
+  .psec{margin-bottom:10px;page-break-inside:avoid;}
+  .psec-title{background:#1B3A6B;color:#fff;text-align:center;font-size:9pt;font-weight:700;padding:4px;}
+  .ptable{width:100%;border-collapse:collapse;font-size:8pt;}
+  .ptable th{background:#C9A84C;color:#1B3A6B;font-weight:700;text-align:center;padding:4px;border:1px solid #1B3A6B;}
+  .ptable td{text-align:center;padding:4px;border:1px solid #bbb;}
+  .ptable tr:nth-child(even) td{background:#f7f7f7;}
+  .ploc-divider{border-top:3px double #1B3A6B;margin:16px 0 10px;page-break-before:always;}
+}
+.print-only{display:none;}
+</style>
+</head>
+<body>
+
+<div class="no-print">
+
+<div class="page-hdr">
+  <div>
+    <div class="page-hdr-title">📁 سجل التقارير</div>
+    <div class="page-hdr-user" id="userLabel"></div>
+  </div>
+  <button class="export-day-btn" onclick="openExportModal()">📤 تصدير يوم كامل</button>
+</div>
+
+<div class="main">
+
+  <!-- Alert banner -->
+  <div class="alert-banner" id="alertBanner">
+    <div class="alert-banner-title">⚠️ تقارير ناقصة لهذا اليوم</div>
+    <div id="alertItems"></div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-label">من تاريخ</div>
+      <input type="date" class="filter-input" id="fFrom">
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">إلى تاريخ</div>
+      <input type="date" class="filter-input" id="fTo">
+    </div>
+    <div class="filter-group" id="supFilterWrap" style="display:none">
+      <div class="filter-label">المشرف</div>
+      <select class="filter-input" id="fSupervisor" style="min-width:150px">
+        <option value="">— الكل —</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">نوع التقرير</div>
+      <select class="filter-input" id="fType" style="min-width:140px">
+        <option value="">— الكل —</option>
+        <option value="daily">التقرير اليومي</option>
+        <option value="presence">التواجد</option>
+      </select>
+    </div>
+    <button class="filter-btn filter-apply" onclick="applyFilter()">تطبيق</button>
+    <button class="filter-btn filter-clear"  onclick="clearFilter()">مسح</button>
+  </div>
+
+  <!-- List -->
+  <div id="reportsList"><div class="loading">⏳ جاري التحميل...</div></div>
+
+</div><!-- main -->
+
+<!-- ── View Modal ───────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="viewModal" onclick="closeViewModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <span class="modal-title" id="modalTitle">عرض التقرير</span>
+      <button class="modal-close" onclick="closeViewModal()">✕ إغلاق</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer no-print">
+      <button class="act-btn act-pdf" onclick="printCurrentReport()">🖨️ طباعة PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirm Modal ─────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="deleteModal" onclick="closeDeleteModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <span class="modal-title">🗑 تأكيد الحذف</span>
+      <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="del-info">
+        لحذف هذا التقرير، أدخل كلمة مرور المشرف:<br>
+        <strong id="delSupName"></strong>
+      </div>
+      <div class="del-pw-wrap">
+        <input type="password" id="delPwInput" placeholder="كلمة المرور"
+          onkeydown="if(event.key==='Enter') confirmDelete()">
+      </div>
+      <div class="del-err" id="delErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeDeleteModal()">إلغاء</button>
+      <button class="btn-del-confirm" onclick="confirmDelete()">تأكيد الحذف</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Export Day Modal ─────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="exportModal" onclick="closeExportModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <span class="modal-title">📤 تصدير يوم كامل</span>
+      <button class="modal-close" onclick="closeExportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="exp-row">
+        <div class="exp-label">اختر التاريخ</div>
+        <input type="date" class="exp-select" id="expDate">
+      </div>
+      <div class="exp-row">
+        <div class="exp-label">الموقع</div>
+        <select class="exp-select" id="expLoc">
+          <option value="">— الكل —</option>
+          <option value="مكة المكرمة">مكة المكرمة</option>
+          <option value="المدينة المنورة">المدينة المنورة</option>
+          <option value="عرفة">عرفة</option>
+          <option value="منى">منى</option>
+          <option value="مزدلفة">مزدلفة</option>
+        </select>
+      </div>
+      <div class="exp-row">
+        <div class="exp-label">نوع التقرير</div>
+        <select class="exp-select" id="expType">
+          <option value="">— الكل —</option>
+          <option value="daily">التقرير اليومي</option>
+          <option value="presence">التواجد</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeExportModal()">إلغاء</button>
+      <button class="btn-export-go" onclick="doExportDay()">📥 تصدير Excel</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end no-print -->
+
+<!-- Print view -->
+<div class="print-only" id="printView"></div>
+
+<div class="toast no-print" id="toast"></div>
+
+<script>
+const SB_URL = 'https://ectajbmqxucrrbyymbbp.supabase.co';
+const SB_KEY = 'sb_publishable_MZfGz7I6NLLR95_DRcM_zQ_zsH8JRSn';
+
+const SECTION_LABELS = {
+  field_tours:'الجولات الميدانية', mashair_tours:'الجولات الميدانية (المشاعر)',
+  reception:'الاستقبال', departure:'المغادرة',
+  records:'المحاضر والملاحظات', closed_centers:'المراكز المغلقة',
+  departments:'الادارات', presence:'التواجد',
+};
+const SECTION_ICONS = {
+  field_tours:'🚶', mashair_tours:'🕌', reception:'🟢', departure:'🔴',
+  records:'📋', closed_centers:'🔒', departments:'🏢', presence:'✅',
+};
+
+const SUPERVISORS_META = [
+  {name:'يوسف الهذلي',        period:'الأولى',  location:'مكة المكرمة',    zone:'makkah'},
+  {name:'فايز الشريف',         period:'الثانية', location:'مكة المكرمة',    zone:'makkah'},
+  {name:'خالد عليوة',          period:'الثالثة', location:'مكة المكرمة',    zone:'makkah'},
+  {name:'رامي الغامدي',        period:'المشاعر', location:'عرفة',            zone:'mashair'},
+  {name:'رامي الغامدي',        period:'المشاعر', location:'منى',             zone:'mashair'},
+  {name:'رامي الغامدي',        period:'المشاعر', location:'مزدلفة',          zone:'mashair'},
+  {name:'وراد سمان',           period:'8ص – 4ع',  location:'المدينة المنورة', zone:'madinah'},
+  {name:'عبد المجيد الصخيري', period:'4ع – 12م', location:'المدينة المنورة', zone:'madinah'},
+  {name:'فترة ثانية',          period:'12م – 8ص', location:'المدينة المنورة', zone:'madinah'},
+];
+
+// الترتيب المعتمد للمواقع والفترات
+const LOCATION_ORDER = {'مكة المكرمة':1,'عرفة':2,'منى':3,'مزدلفة':4,'المدينة المنورة':5};
+const PERIOD_ORDER   = {'الأولى':1,'الثانية':2,'الثالثة':3,'المشاعر':4,'8ص – 4ع':5,'4ع – 12م':6,'12م – 8ص':7};
+
+// الفترات المتوقعة لكل موقع (لفحص الاكتمال)
+const EXPECTED_PERIODS = {
+  'مكة المكرمة':    ['الأولى','الثانية','الثالثة'],
+  'المدينة المنورة': ['8ص – 4ع','4ع – 12م','12م – 8ص'],
+};
+
+// ── URL params ────────────────────────────────────────────────────────────────
+const _P        = new URLSearchParams(location.search);
+const _name     = _P.get('name') ? decodeURIComponent(_P.get('name')) : '';
+const _role     = _P.get('role') || 'supervisor';
+const isAdmin   = _role === 'admin';
+const isManager = _role === 'manager';
+const canDelete = !isManager;
+
+let _allReports = [];
+let _pendingDeleteId   = null;
+let _pendingDeleteSup  = null;
+let _currentReport     = null;
+
+// ── Supabase ──────────────────────────────────────────────────────────────────
+async function sbGet(path){
+  const r = await fetch(`${SB_URL}/rest/v1/${path}`,{
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+  });
+  return r.json();
+}
+async function sbDel(path){
+  await fetch(`${SB_URL}/rest/v1/${path}`,{
+    method:'DELETE',
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async function init(){
+  document.getElementById('userLabel').textContent = isAdmin
+    ? 'مدير النظام'
+    : isManager
+    ? `${_name} — مدير`
+    : `${_name}`;
+
+  // supervisor filter — show to admin/manager only
+  if(isAdmin || isManager){
+    document.getElementById('supFilterWrap').style.display = 'flex';
+    const sel = document.getElementById('fSupervisor');
+    SUPERVISORS_META.forEach(s=>{
+      const o = document.createElement('option');
+      o.value = o.textContent = s.name;
+      sel.appendChild(o);
+    });
+  }
+
+  // default export date = today
+  document.getElementById('expDate').value = new Date().toISOString().substring(0,10);
+
+  await loadReports();
+})();
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadReports(from, to, supervisor, rtype){
+  document.getElementById('reportsList').innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
+  try{
+    // كل المستخدمين يشوفون كل التقارير
+    let q = 'daily_reports?select=*&order=report_date.desc';
+    if(supervisor) q += `&supervisor=eq.${encodeURIComponent(supervisor)}`;
+    if(from) q += `&report_date=gte.${from}T00:00:00`;
+    if(to)   q += `&report_date=lte.${to}T23:59:59`;
+    if(rtype) q += `&report_type=eq.${rtype}`;
+
+    _allReports = await sbGet(q);
+
+    checkAndRenderAlerts();
+    renderList(_allReports);
+  }catch(e){
+    document.getElementById('reportsList').innerHTML =
+      `<div class="empty-state"><div>⚠️</div>خطأ في التحميل</div>`;
+  }
+}
+
+// ── Completeness check ────────────────────────────────────────────────────────
+function checkAndRenderAlerts(){
+  const today = new Date().toISOString().substring(0,10);
+  // فحص اليوم الحالي فقط
+  const todayReports = _allReports.filter(r => r.report_date.startsWith(today));
+  const byLoc = {};
+  todayReports.forEach(r=>{
+    if(!byLoc[r.location]) byLoc[r.location] = new Set();
+    byLoc[r.location].add(r.period);
+  });
+
+  const alerts = [];
+  Object.entries(EXPECTED_PERIODS).forEach(([loc, expected])=>{
+    const covered = byLoc[loc] || new Set();
+    const missing = expected.filter(p => !covered.has(p));
+    if(missing.length) alerts.push({loc, missing});
+  });
+
+  const banner = document.getElementById('alertBanner');
+  const items  = document.getElementById('alertItems');
+  if(!alerts.length){ banner.style.display='none'; return; }
+  banner.style.display = 'block';
+  items.innerHTML = alerts.map(a=>
+    `<div class="alert-item"><strong>${a.loc}</strong> — الفترات الناقصة: ${a.missing.join('، ')}</div>`
+  ).join('');
+}
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+function sortReports(reports){
+  return [...reports].sort((a,b)=>{
+    const lo = (LOCATION_ORDER[a.location]||9) - (LOCATION_ORDER[b.location]||9);
+    if(lo!==0) return lo;
+    const po = (PERIOD_ORDER[a.period]||9) - (PERIOD_ORDER[b.period]||9);
+    if(po!==0) return po;
+    return new Date(b.report_date) - new Date(a.report_date);
+  });
+}
+
+// ── Render list ───────────────────────────────────────────────────────────────
+function renderList(reports){
+  const el = document.getElementById('reportsList');
+  if(!reports.length){
+    el.innerHTML = `<div class="empty-state"><div>📭</div>لا توجد تقارير</div>`;
+    return;
+  }
+  const sorted = sortReports(reports);
+
+  // تجميع حسب الموقع
+  const groups = {};
+  const groupOrder = [];
+  sorted.forEach(r=>{
+    const loc = r.location || 'غير محدد';
+    if(!groups[loc]){ groups[loc]=[]; groupOrder.push(loc); }
+    groups[loc].push(r);
+  });
+
+  const ZONE_ICONS = {'مكة المكرمة':'🕋','المدينة المنورة':'🕌','عرفة':'⛺','منى':'🏕️','مزدلفة':'🌙'};
+  let html = '';
+  groupOrder.forEach(loc=>{
+    const icon = ZONE_ICONS[loc]||'📍';
+    html += `<div class="loc-group">
+      <div class="loc-group-hdr">${icon} ${loc} <span style="font-weight:400">(${groups[loc].length} تقرير)</span></div>
+      <div class="reports-grid">${groups[loc].map(r=>reportCard(r)).join('')}</div>
+    </div>`;
+  });
+  html += `<div class="results-footer">تم عرض <strong>${reports.length}</strong> ${reports.length===1?'تقرير':'تقارير'}</div>`;
+  el.innerHTML = html;
+}
+
+function reportCard(r){
+  const d  = new Date(r.report_date);
+  const dt = d.toLocaleDateString('ar-SA')+' '+d.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+  const rtype = r.report_type === 'presence' ? 'التواجد' : 'اليومي';
+  return `
+    <div class="report-card">
+      <div class="report-card-hdr">
+        <span class="report-card-date">📋 ${dt}</span>
+        <span class="report-type-badge">${rtype}</span>
+      </div>
+      <div class="report-card-meta">
+        <div class="meta-chip"><span>${r.supervisor||'—'}</span></div>
+        <div class="meta-chip"><span>${r.period||'—'}</span></div>
+      </div>
+      <div class="report-card-actions">
+        <button class="act-btn act-view" onclick="viewReport('${r.id}')">👁 عرض</button>
+        <button class="act-btn act-pdf"  onclick="exportReport('${r.id}')">🖨️ PDF</button>
+        ${canDelete?`<button class="act-btn act-del" onclick="promptDelete('${r.id}','${escAttr(r.supervisor||'')}')">🗑 حذف</button>`:''}
+      </div>
+    </div>`;
+}
+function escAttr(s){ return s.replace(/'/g,"\\'"); }
+
+// ── Filter ────────────────────────────────────────────────────────────────────
+function applyFilter(){
+  const from = document.getElementById('fFrom').value;
+  const to   = document.getElementById('fTo').value;
+  const sup  = (isAdmin||isManager) ? document.getElementById('fSupervisor').value : '';
+  const rtype= document.getElementById('fType').value;
+  loadReports(from||null, to||null, sup||null, rtype||null);
+}
+function clearFilter(){
+  ['fFrom','fTo','fType'].forEach(id=>{ document.getElementById(id).value=''; });
+  if(isAdmin||isManager) document.getElementById('fSupervisor').value='';
+  loadReports();
+}
+
+// ── View report ───────────────────────────────────────────────────────────────
+async function viewReport(id){
+  document.getElementById('modalBody').innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
+  document.getElementById('viewModal').classList.add('show');
+  try{
+    const [rArr, entries] = await Promise.all([
+      sbGet(`daily_reports?id=eq.${id}&select=*`),
+      sbGet(`report_entries?report_id=eq.${id}&select=*&order=sort_order`)
+    ]);
+    const r = rArr[0];
+    if(!r){ document.getElementById('modalBody').innerHTML='<div class="empty-state">تعذر تحميل التقرير</div>'; return; }
+    const d  = new Date(r.report_date);
+    const dt = d.toLocaleDateString('ar-SA')+' '+d.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('modalTitle').textContent = `📋 ${r.location} — ${r.period} — ${dt}`;
+
+    const grouped = {};
+    entries.forEach(e=>{ (grouped[e.section]=grouped[e.section]||[]).push(e); });
+
+    let sectionsHtml = '';
+    Object.keys(grouped).forEach(secKey=>{
+      const items = grouped[secKey];
+      const label = SECTION_LABELS[secKey]||secKey;
+      const icon  = SECTION_ICONS[secKey]||'📌';
+      let thead='', rows='';
+      if(secKey==='closed_centers'){
+        thead='<th>#</th><th>المركز</th><th>الحالة</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>مغلق</td></tr>`).join('');
+      } else if(secKey==='departments'){
+        thead='<th>#</th><th>الإدارة</th><th>ملاحظات</th><th>الإجراء</th><th>النتيجة</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.action_taken||'—'}</td><td>${e.result||'—'}</td></tr>`).join('');
+      } else if(secKey==='reception'||secKey==='departure'){
+        thead='<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>الجنسية</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.pilgrim_count??'—'}</td><td>${e.nationality||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
+      } else if(secKey==='presence'){
+        thead='<th>#</th><th>المركز / الإدارة</th><th>متواجدون</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.has_madar_report?(e.notes||'نعم'):'لا'}</td></tr>`).join('');
+      } else {
+        thead='<th>#</th><th>المركز</th><th>ملاحظات</th><th>الإجراء</th><th>النتيجة</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?(e.notes||'نعم'):'لا'}</td><td>${e.action_taken||'—'}</td><td>${e.result||'—'}</td></tr>`).join('');
+      }
+      sectionsHtml += `<div class="msec">
+        <div class="msec-title">${icon} ${label} (${items.length})</div>
+        <table class="msec-table"><thead><tr>${thead}</tr></thead><tbody>${rows}</tbody></table>
+      </div>`;
+    });
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-meta">
+        <div class="modal-meta-item"><span class="modal-meta-lbl">الموقع:</span><span class="modal-meta-val">${r.location||'—'}</span></div>
+        <div class="modal-meta-item"><span class="modal-meta-lbl">المشرف:</span><span class="modal-meta-val">${r.supervisor||'—'}</span></div>
+        <div class="modal-meta-item"><span class="modal-meta-lbl">الفترة:</span><span class="modal-meta-val">${r.period||'—'}</span></div>
+        <div class="modal-meta-item"><span class="modal-meta-lbl">التاريخ:</span><span class="modal-meta-val">${dt}</span></div>
+      </div>
+      ${sectionsHtml||'<div class="empty-state" style="padding:20px 0">لا توجد بيانات</div>'}`;
+    _currentReport = {r, entries, dt};
+  }catch(e){
+    document.getElementById('modalBody').innerHTML = '<div class="empty-state">خطأ في التحميل</div>';
+  }
+}
+function closeViewModal(e){
+  if(!e || e.target===document.getElementById('viewModal'))
+    document.getElementById('viewModal').classList.remove('show');
+}
+
+// ── Delete — password confirm ─────────────────────────────────────────────────
+function promptDelete(id, supervisor){
+  _pendingDeleteId  = id;
+  _pendingDeleteSup = supervisor;
+  if(isAdmin){
+    // Admin يحذف مباشرة بدون كلمة مرور
+    if(!confirm('هل أنت متأكد من حذف هذا التقرير؟')) return;
+    execDelete(id);
+    return;
+  }
+  document.getElementById('delSupName').textContent = supervisor;
+  document.getElementById('delPwInput').value = '';
+  document.getElementById('delErr').textContent = '';
+  document.getElementById('deleteModal').classList.add('show');
+  setTimeout(()=>document.getElementById('delPwInput').focus(), 200);
+}
+
+async function confirmDelete(){
+  const pw = document.getElementById('delPwInput').value.trim();
+  if(!pw){ document.getElementById('delErr').textContent = 'أدخل كلمة المرور'; return; }
+  document.getElementById('delErr').textContent = '⏳ جاري التحقق...';
+  try{
+    const list = await sbGet(`accounts?name=eq.${encodeURIComponent(_pendingDeleteSup)}&password=eq.${encodeURIComponent(pw)}&select=id`);
+    if(list && list.length > 0){
+      closeDeleteModal();
+      await execDelete(_pendingDeleteId);
+    } else {
+      document.getElementById('delErr').textContent = '✕ كلمة المرور غير صحيحة';
+    }
+  }catch{ document.getElementById('delErr').textContent = 'خطأ في التحقق'; }
+}
+
+async function execDelete(id){
+  try{
+    await sbDel(`report_entries?report_id=eq.${id}`);
+    await sbDel(`daily_reports?id=eq.${id}`);
+    _allReports = _allReports.filter(r=>r.id!==id);
+    checkAndRenderAlerts();
+    renderList(_allReports);
+    toast('✓ تم حذف التقرير','success');
+  }catch{ toast('خطأ في الحذف','error'); }
+}
+
+function closeDeleteModal(e){
+  if(!e || e.target===document.getElementById('deleteModal')){
+    document.getElementById('deleteModal').classList.remove('show');
+    _pendingDeleteId = _pendingDeleteSup = null;
+  }
+}
+
+// ── Export day modal ──────────────────────────────────────────────────────────
+function openExportModal(){
+  document.getElementById('exportModal').classList.add('show');
+}
+function closeExportModal(e){
+  if(!e || e.target===document.getElementById('exportModal'))
+    document.getElementById('exportModal').classList.remove('show');
+}
+
+async function doExportDay(){
+  const date = document.getElementById('expDate').value;
+  const loc  = document.getElementById('expLoc').value;
+  const rtype= document.getElementById('expType').value;
+  if(!date){ toast('اختر التاريخ أولاً','error'); return; }
+
+  let filtered = _allReports.filter(r=>r.report_date.startsWith(date));
+  if(loc)   filtered = filtered.filter(r=>r.location===loc);
+  if(rtype) filtered = filtered.filter(r=>(r.report_type||'daily')===rtype);
+  if(!filtered.length){ toast('لا توجد تقارير لهذا اليوم','error'); return; }
+
+  const sorted = sortReports(filtered);
+  const entriesArr = await Promise.all(
+    sorted.map(r=>sbGet(`report_entries?report_id=eq.${r.id}&select=*&order=sort_order`))
+  );
+
+  // ── Build flat rows ───────────────────────────────────────────────────────
+  const COLS = ['الموقع','الفترة','المشرف','نوع التقرير','القسم','المركز / الإدارة','عدد الحجاج','الجنسية','متواجدون','ملاحظات'];
+  const dataRows = [];
+  sorted.forEach((r,ri)=>{
+    const entries = entriesArr[ri]||[];
+    const rTypeLabel = r.report_type==='presence' ? 'التواجد' : 'التقرير اليومي';
+    entries.forEach(e=>{
+      const secLabel = SECTION_LABELS[e.section]||e.section;
+      const isPilgrim  = e.section==='reception'||e.section==='departure';
+      const isPresence = e.section==='presence';
+      dataRows.push([
+        r.location||'',
+        r.period||'',
+        r.supervisor||'',
+        rTypeLabel,
+        secLabel,
+        e.center||'',
+        isPilgrim  ? (e.pilgrim_count??'') : '',
+        isPilgrim  ? (e.nationality||'')   : '',
+        isPresence ? (e.has_notes?'نعم':'لا') : '',
+        isPresence
+          ? (e.has_madar_report?(e.notes||'نعم'):'لا')
+          : (e.has_notes?(e.notes||'نعم'):'لا'),
+      ]);
+    });
+    if(!entries.length) dataRows.push([r.location||'',r.period||'',r.supervisor||'',rTypeLabel,'—','—','','','','']);
+  });
+
+  // ── Styles ────────────────────────────────────────────────────────────────
+  const BORDER_GOLD = {style:'thin',color:{rgb:'C9A84C'}};
+  const BORDER_THIN = {style:'thin',color:{rgb:'D9E2EE'}};
+  const S_TITLE = {
+    font:{bold:true,sz:13,color:{rgb:'C9A84C'},name:'Arial'},
+    fill:{patternType:'solid',fgColor:{rgb:'0C2550'}},
+    alignment:{horizontal:'center',vertical:'center',wrapText:true,readingOrder:2}
+  };
+  const S_HEADER = {
+    font:{bold:true,sz:11,color:{rgb:'F5F0E8'},name:'Arial'},
+    fill:{patternType:'solid',fgColor:{rgb:'0C2550'}},
+    alignment:{horizontal:'center',vertical:'center',wrapText:true,readingOrder:2},
+    border:{top:BORDER_GOLD,bottom:{style:'medium',color:{rgb:'C9A84C'}},left:BORDER_GOLD,right:BORDER_GOLD}
+  };
+  const S_ODD = {
+    font:{sz:10,color:{rgb:'1B2535'},name:'Arial'},
+    fill:{patternType:'solid',fgColor:{rgb:'FFFFFF'}},
+    alignment:{vertical:'center',wrapText:true,readingOrder:2},
+    border:{bottom:BORDER_THIN,left:BORDER_THIN,right:BORDER_THIN}
+  };
+  const S_EVEN = {
+    font:{sz:10,color:{rgb:'1B2535'},name:'Arial'},
+    fill:{patternType:'solid',fgColor:{rgb:'E8EDF7'}},
+    alignment:{vertical:'center',wrapText:true,readingOrder:2},
+    border:{bottom:BORDER_THIN,left:BORDER_THIN,right:BORDER_THIN}
+  };
+
+  // ── Build sheet (title + spacer + header + data) ──────────────────────────
+  const nCols = COLS.length;
+  const aoa = [
+    [`إدارة الامتثال والالتزام — تقارير يوم ${date}`, ...Array(nCols-1).fill('')],
+    Array(nCols).fill(''),   // spacer
+    COLS,
+    ...dataRows
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Merge title across all columns
+  ws['!merges'] = [{ s:{r:0,c:0}, e:{r:0,c:nCols-1} }];
+
+  // Style every cell
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for(let R=range.s.r; R<=range.e.r; R++){
+    for(let C=range.s.c; C<=range.e.c; C++){
+      const addr = XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr]) ws[addr]={v:'',t:'s'};
+      if(R===0)      ws[addr].s = S_TITLE;
+      else if(R===1) ws[addr].s = {fill:{patternType:'solid',fgColor:{rgb:'0C2550'}}};
+      else if(R===2) ws[addr].s = S_HEADER;
+      else           ws[addr].s = (R%2===0) ? S_EVEN : S_ODD;
+    }
+  }
+
+  // Row heights
+  ws['!rows'] = [
+    {hpt:32},   // title
+    {hpt:8},    // spacer
+    {hpt:26},   // header
+    ...dataRows.map(()=>({hpt:18}))
+  ];
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:18},{wch:14},{wch:20},{wch:16},
+    {wch:24},{wch:40},
+    {wch:14},{wch:14},{wch:12},{wch:36}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, date||'تصدير');
+  XLSX.writeFile(wb, `تقارير_يوم_${date}.xlsx`);
+  closeExportModal();
+}
+
+function buildDayPrint(reports, entriesByReport, date){
+  const ZONE_ICONS = {'مكة المكرمة':'🕋','المدينة المنورة':'🕌','عرفة':'⛺','منى':'🏕️','مزدلفة':'🌙'};
+  let html = `<div class="pdoc">
+    <div class="phdr">
+      <div><div class="plogo">الراجحي</div><div class="plogo-en">Al Rajhi</div></div>
+      <div style="text-align:center;flex:1;padding:0 16px">
+        <div class="ptitle-main">إدارة الامتثال والالتزام</div>
+        <div class="ptitle-sub">تقارير يوم ${date}</div>
+      </div>
+      <div style="font-size:8pt;color:#555">${new Date().toLocaleDateString('ar-SA')}</div>
+    </div>`;
+
+  let lastLoc = null;
+  reports.forEach(r=>{
+    const entries = entriesByReport[r.id]||[];
+    if(lastLoc && lastLoc!==r.location) html += `<div class="ploc-divider"></div>`;
+    lastLoc = r.location;
+    const icon = ZONE_ICONS[r.location]||'📍';
+    const t = new Date(r.report_date).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+    html += `<div class="preport-block">
+      <div class="preport-hdr">
+        <span>${icon} ${r.location} — ${r.period} — ${r.supervisor}</span>
+        <span>${t}</span>
+      </div>`;
+
+    const grouped={};
+    entries.forEach(e=>{ (grouped[e.section]=grouped[e.section]||[]).push(e); });
+    if(!Object.keys(grouped).length) html += `<p style="font-size:8pt;color:#666;padding:4px">لا توجد بيانات</p>`;
+
+    Object.keys(grouped).forEach(secKey=>{
+      const items = grouped[secKey];
+      const label = SECTION_LABELS[secKey]||secKey;
+      let thead='', rows='';
+      if(secKey==='closed_centers'){
+        thead='<th>#</th><th>المركز</th><th>الحالة</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>مغلق</td></tr>`).join('');
+      } else if(secKey==='departments'){
+        thead='<th>#</th><th>الإدارة</th><th>ملاحظات</th><th>الإجراء</th><th>النتيجة</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.action_taken||'—'}</td><td>${e.result||'—'}</td></tr>`).join('');
+      } else if(secKey==='reception'||secKey==='departure'){
+        thead='<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>الجنسية</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.pilgrim_count??'—'}</td><td>${e.nationality||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
+      } else if(secKey==='presence'){
+        thead='<th>#</th><th>المركز / الإدارة</th><th>متواجدون</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.has_madar_report?(e.notes||'نعم'):'لا'}</td></tr>`).join('');
+      } else {
+        thead='<th>#</th><th>المركز</th><th>ملاحظات</th><th>الإجراء</th><th>النتيجة</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?(e.notes||'نعم'):'لا'}</td><td>${e.action_taken||'—'}</td><td>${e.result||'—'}</td></tr>`).join('');
+      }
+      html += `<div class="psec"><div class="psec-title">${label} (${items.length})</div>
+        <table class="ptable"><thead><tr>${thead}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ── Individual report print ───────────────────────────────────────────────────
+async function exportReport(id){
+  const [rArr, entries] = await Promise.all([
+    sbGet(`daily_reports?id=eq.${id}&select=*`),
+    sbGet(`report_entries?report_id=eq.${id}&select=*&order=sort_order`)
+  ]);
+  printReportDoc(rArr[0], entries);
+}
+function printCurrentReport(){
+  if(!_currentReport) return;
+  printReportDoc(_currentReport.r, _currentReport.entries);
+}
+function printReportDoc(r, entries){
+  const d  = new Date(r.report_date);
+  const dt = d.toLocaleDateString('ar-SA');
+  const map = {};
+  entries.forEach(e=>{ (map[e.section]=map[e.section]||[]).push(e); });
+  const body = buildDayPrint([r], {[r.id]:entries}, dt);
+  document.getElementById('printView').innerHTML = body;
+  document.querySelector('.no-print').style.display='none';
+  document.getElementById('printView').style.display='block';
+  window.print();
+  document.querySelector('.no-print').style.display='';
+  document.getElementById('printView').style.display='none';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let _tt;
+function toast(msg,type='success'){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast show ${type}`;
+  clearTimeout(_tt); _tt=setTimeout(()=>el.className='toast',3500);
+}
+</script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</body>
+</html>
