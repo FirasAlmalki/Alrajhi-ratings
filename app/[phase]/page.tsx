@@ -72,13 +72,15 @@ export default function PhasePage() {
       list = list.filter((l: any) => currentFilter.has(l.key));
     }
     // Sort
+    const sortField = currentSort.replace('_asc', '');
+    const sortDir   = currentSort.endsWith('_asc') ? 1 : -1;
     list = [...list].sort((a: any, b: any) => {
-      if (currentSort === 'pct') return b.pct - a.pct;
-      if (currentSort === 'date') {
+      if (sortField === 'pct') return sortDir * (a.pct - b.pct);
+      if (sortField === 'date') {
         if (!a.date && !b.date) return 0;
         if (!a.date) return 1;
         if (!b.date) return -1;
-        return a.date < b.date ? 1 : a.date > b.date ? -1 : 0;
+        return sortDir * (a.date > b.date ? -1 : a.date < b.date ? 1 : 0);
       }
       return 0;
     });

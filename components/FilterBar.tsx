@@ -88,18 +88,23 @@ export default function FilterBar({ page, locations, onExportColsOpen, onSortCha
 
       <div className="sort-bar">
         <span className="sort-lbl">ترتيب حسب:</span>
-        <button 
-          className={`sort-btn ${currentSort === 'pct' ? 'active' : ''}`}  
-          onClick={() => onSortChange('pct')}
-        >
-          الجاهزية <span className="sort-arrow">{currentSort === 'pct' ? '↑' : ''}</span>
-        </button>
-        <button 
-          className={`sort-btn ${currentSort === 'date' ? 'active' : ''}`}
-          onClick={() => onSortChange('date')}
-        >
-          آخر زيارة <span className="sort-arrow">{currentSort === 'date' ? '↑' : ''}</span>
-        </button>
+        {(['pct', 'date'] as const).map(field => {
+          const isActive = currentSort === field || currentSort === field + '_asc';
+          const isAsc    = currentSort === field + '_asc';
+          return (
+            <button
+              key={field}
+              className={`sort-btn ${isActive ? 'active' : ''}`}
+              onClick={() => {
+                if (!isActive) onSortChange(field);          // first click → desc
+                else onSortChange(isAsc ? field : field + '_asc'); // toggle
+              }}
+            >
+              {field === 'pct' ? 'الجاهزية' : 'آخر زيارة'}
+              <span className="sort-arrow">{isActive ? (isAsc ? ' ↑' : ' ↓') : ''}</span>
+            </button>
+          );
+        })}
       </div>
     </>
   );
