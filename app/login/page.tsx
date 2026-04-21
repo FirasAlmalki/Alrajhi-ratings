@@ -54,8 +54,6 @@ export default function LoginPage() {
         <div className="login-brand">
           <img src="/Alrajhi.png" alt="الراجحي" className="logo-img" style={{ height: '72px' }} />
         </div>
-        <div className="login-subtitle">مراحل المشاعر المقدسة</div>
-        
         <input 
           type="password" 
           className="login-input" 

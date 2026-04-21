@@ -11,7 +11,8 @@ interface HeaderProps {
 
 export default function Header({ pageId, onToggleSidebar }: HeaderProps) {
   const title = PAGE_LABELS[pageId] || 'جاهزية المشاعر المقدسة';
-  const subtitle = (pageId !== 'home' && pageId !== 'upload') ? 'مرحلة الجاهزية' : '';
+  const PHASE_PAGES = ['arafa', 'mina', 'masaken'];
+  const subtitle = PHASE_PAGES.includes(pageId) ? 'مرحلة الجاهزية' : '';
 
   return (
     <div className="header">
