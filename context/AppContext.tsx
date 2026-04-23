@@ -96,17 +96,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSyncing(true);
     const newData = { ...data };
     let changed = false;
-    
-    for (const cat of Object.keys(STORE_KEYS)) {
+
+    const results = await Promise.all(Object.keys(STORE_KEYS).map(async cat => {
       try {
         const d = await loadFromGSheet(cat);
-        if (d && d.locations.length > 0) {
-          newData[cat] = d;
-          localStorage.setItem(STORE_KEYS[cat], JSON.stringify(d));
-          changed = true;
-        }
+        return { cat, d };
       } catch (e) {
         console.error(`Failed to sync ${cat}:`, e);
+        return { cat, d: null };
+      }
+    }));
+
+    for (const { cat, d } of results) {
+      if (d && d.locations.length > 0) {
+        newData[cat] = d;
+        localStorage.setItem(STORE_KEYS[cat], JSON.stringify(d));
+        changed = true;
       }
     }
     

@@ -2,8 +2,6 @@
 
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { doExport } from '../lib/export';
-import { EXPORT_COLS } from '../lib/config';
 
 interface FilterBarProps {
   page: string;
@@ -19,13 +17,37 @@ export default function FilterBar({ page, locations, onExportColsOpen, onSortCha
   const { filters, updateFilters } = useApp();
   
   const currentFilter = filters[page];
-  const isFiltered = currentFilter && currentFilter.size < locations.length;
   
   const filteredLocs = useMemo(() => {
     if (!search) return locations;
     const s = search.toLowerCase();
     return locations.filter(l => l.name.toLowerCase().includes(s) || (l.sub && l.sub.toLowerCase().includes(s)));
   }, [locations, search]);
+  const quickFilters = useMemo(() => {
+    const isAttention = (l: any) => l.pct < 1 || l.failedList?.length || l.isClosed || l.isWrongLocation || l.hasGuests;
+    const all = locations.map(l => l.key);
+    const filters = [
+      { key: 'all', label: 'الكل', keys: all },
+      { key: 'attention', label: 'تحتاج متابعة', keys: locations.filter(isAttention).map(l => l.key) },
+      { key: 'complete', label: 'مكتمل', keys: locations.filter(l => l.pct >= 1 && !l.failedList?.length && !l.isClosed && !l.isWrongLocation && !l.hasGuests).map(l => l.key) },
+    ];
+
+    if (page === 'masaken') {
+      filters.push(
+        { key: 'closed', label: 'مغلق', keys: locations.filter(l => l.isClosed).map(l => l.key) },
+        { key: 'wrong', label: 'موقع خاطئ', keys: locations.filter(l => l.isWrongLocation).map(l => l.key) },
+        { key: 'guests', label: 'يوجد معتمرين', keys: locations.filter(l => l.hasGuests).map(l => l.key) },
+      );
+    }
+
+    return filters.filter(f => f.key === 'all' || f.keys.length > 0);
+  }, [locations, page]);
+
+  const isSameSelection = (keys: string[]) => {
+    if (!currentFilter) return keys.length === locations.length;
+    if (currentFilter.size !== keys.length) return false;
+    return keys.every(k => currentFilter.has(k));
+  };
 
   const handleToggleLoc = (key: string, checked: boolean) => {
     const newF = new Set(currentFilter || locations.map(l => l.key));
@@ -60,6 +82,18 @@ export default function FilterBar({ page, locations, onExportColsOpen, onSortCha
       </div>
 
       <div className={`filter-panel ${filterOpen ? 'open' : ''}`}>
+        <div className="quick-filter-row">
+          {quickFilters.map(f => (
+            <button
+              key={f.key}
+              className={`quick-filter-chip ${isSameSelection(f.keys) ? 'active' : ''}`}
+              onClick={() => updateFilters(page, new Set(f.keys))}
+            >
+              {f.label}
+              <span>{f.keys.length}</span>
+            </button>
+          ))}
+        </div>
         <input 
           className="filter-search-inp" 
           type="text" 

@@ -6,7 +6,9 @@
 <title>الوصول المتوقع الى مكة المكرمة</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0a1628;color:#e8e0d0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;min-height:100vh}
+html{max-width:100%;overflow-x:hidden}
+body{background:#0a1628;color:#e8e0d0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;min-height:100vh;max-width:100%;overflow-x:hidden}
+button,input,select,textarea{min-width:0;max-width:100%}
 
 /* ─ Header ─ */
 .page-header{background:linear-gradient(135deg,#0d1f3c 0%,#1a3a6b 60%,#0d1f3c 100%);border-bottom:3px solid #c9a84c;padding:20px 24px;display:flex;align-items:center;gap:16px}
@@ -86,9 +88,11 @@ body{background:#0a1628;color:#e8e0d0;font-family:'Segoe UI',Tahoma,Arial,sans-s
 .legend-swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,.1)}
 
 @media(max-width:600px){
-  .page-header{flex-wrap:wrap}
+  .page-header{flex-wrap:wrap;padding:16px 14px}
   .header-badge{margin-right:0;width:100%}
-  .kpi-strip{gap:8px}
+  .kpi-strip{gap:8px;padding:12px 14px}
+  .cal-wrap{padding:14px 10px}
+  .legend{padding:0 14px 14px}
   .cal-grid{gap:3px}
   .cal-cell{min-height:58px;padding:6px 4px}
   .cell-day{font-size:0.78rem}
