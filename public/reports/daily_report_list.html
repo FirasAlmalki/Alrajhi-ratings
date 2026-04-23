@@ -293,25 +293,24 @@ const SECTION_ICONS = {
 };
 
 const SUPERVISORS_META = [
-  {name:'يوسف الهذلي',        period:'الأولى',  location:'مكة المكرمة',    zone:'makkah'},
-  {name:'فايز الشريف',         period:'الثانية', location:'مكة المكرمة',    zone:'makkah'},
-  {name:'خالد عليوة',          period:'الثالثة', location:'مكة المكرمة',    zone:'makkah'},
-  {name:'رامي الغامدي',        period:'المشاعر', location:'عرفة',            zone:'mashair'},
-  {name:'رامي الغامدي',        period:'المشاعر', location:'منى',             zone:'mashair'},
-  {name:'رامي الغامدي',        period:'المشاعر', location:'مزدلفة',          zone:'mashair'},
-  {name:'وراد سمان',           period:'8ص – 4ع',  location:'المدينة المنورة', zone:'madinah'},
-  {name:'عبد المجيد الصخيري', period:'4ع – 12م', location:'المدينة المنورة', zone:'madinah'},
-  {name:'فترة ثانية',          period:'12م – 8ص', location:'المدينة المنورة', zone:'madinah'},
+  {name:'يوسف الهذلي',        period:'فترة أولى',  location:'مكة المكرمة',    zone:'makkah'},
+  {name:'فايز الشريف',         period:'فترة ثانية', location:'مكة المكرمة',    zone:'makkah'},
+  {name:'خالد عليوة',          period:'فترة ثالثة', location:'مكة المكرمة',    zone:'makkah'},
+  {name:'رامي الغامدي',        period:'المشاعر',    location:'عرفة',            zone:'mashair'},
+  {name:'رامي الغامدي',        period:'المشاعر',    location:'منى',             zone:'mashair'},
+  {name:'رامي الغامدي',        period:'المشاعر',    location:'مزدلفة',          zone:'mashair'},
+  {name:'عبدالمجيد الخطيري',  period:'فترة أولى',  location:'المدينة المنورة', zone:'madinah'},
+  {name:'وراد سمان',           period:'فترة ثانية', location:'المدينة المنورة', zone:'madinah'},
 ];
 
 // الترتيب المعتمد للمواقع والفترات
 const LOCATION_ORDER = {'مكة المكرمة':1,'عرفة':2,'منى':3,'مزدلفة':4,'المدينة المنورة':5};
-const PERIOD_ORDER   = {'الأولى':1,'الثانية':2,'الثالثة':3,'المشاعر':4,'8ص – 4ع':5,'4ع – 12م':6,'12م – 8ص':7};
+const PERIOD_ORDER   = {'فترة أولى':1,'فترة ثانية':2,'فترة ثالثة':3,'المشاعر':4};
 
 // الفترات المتوقعة لكل موقع (لفحص الاكتمال)
 const EXPECTED_PERIODS = {
-  'مكة المكرمة':    ['الأولى','الثانية','الثالثة'],
-  'المدينة المنورة': ['8ص – 4ع','4ع – 12م','12م – 8ص'],
+  'مكة المكرمة':    ['فترة أولى','فترة ثانية','فترة ثالثة'],
+  'المدينة المنورة': ['فترة أولى','فترة ثانية'],
 };
 
 // ── URL params ────────────────────────────────────────────────────────────────
