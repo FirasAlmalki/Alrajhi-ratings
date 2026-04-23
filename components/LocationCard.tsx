@@ -7,16 +7,11 @@ interface LocationCardProps {
   isMasaken: boolean;
 }
 
-export default function LocationCard({ loc }: LocationCardProps) {
+export default function LocationCard({ loc, isMasaken }: LocationCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const pctVal = Math.round(loc.pct * 100);
   const is100 = pctVal === 100;
-  const cardTone = loc.isClosed || loc.isWrongLocation || loc.hasGuests
-    ? 'critical'
-    : loc.failedList.length > 0 || pctVal < 100
-      ? 'warning'
-      : 'ok';
   const barColor = is100 ? 'var(--green)' : 'var(--gold)';
   const badgePctClass = is100 ? 'badge badge-pct-100' : 'badge badge-pct';
   const visitDate = loc.dateDisplay || '';
@@ -94,8 +89,8 @@ export default function LocationCard({ loc }: LocationCardProps) {
   };
 
   return (
-    <div className={`loc-card ${cardTone} ${expanded ? 'expanded' : ''}`} data-key={loc.key}>
-      <div className="loc-header" onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>
+    <div className={`loc-card ${expanded ? 'expanded' : ''}`} data-key={loc.key}>
+      <div className="loc-header" onClick={() => setExpanded(!expanded)}>
         <div className="loc-name">
           {loc.name}
           {loc.sub && <div className="loc-sub">{loc.sub}</div>}
