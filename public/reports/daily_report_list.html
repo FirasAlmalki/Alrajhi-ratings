@@ -446,7 +446,6 @@ function reportCard(r){
       </div>
       <div class="report-card-actions">
         <button class="act-btn act-view" onclick="viewReport('${r.id}')">👁 عرض</button>
-        <button class="act-btn act-pdf"  onclick="exportReport('${r.id}')">🖨️ PDF</button>
         ${canDelete?`<button class="act-btn act-del" onclick="promptDelete('${r.id}','${escAttr(r.supervisor||'')}')">🗑 حذف</button>`:''}
       </div>
     </div>`;
