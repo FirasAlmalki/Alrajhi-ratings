@@ -23,11 +23,7 @@ body{font-family:'Tajawal',sans-serif;background:var(--dark-bg);color:var(--text
 .export-day-btn{padding:7px 14px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;border:none;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);color:var(--gold);transition:background .15s;}
 .export-day-btn:hover{background:rgba(201,168,76,.28);}
 
-/* Alert banner */
-.alert-banner{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.3);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:none;}
-.alert-banner-title{font-size:0.8rem;font-weight:700;color:#e74c3c;margin-bottom:8px;}
-.alert-item{font-size:0.78rem;color:#f0a899;padding:3px 0;display:flex;align-items:center;gap:6px;}
-.alert-item::before{content:'⚠️';flex-shrink:0;}
+
 
 /* Filter */
 .filter-bar{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;}
@@ -162,12 +158,6 @@ body{font-family:'Tajawal',sans-serif;background:var(--dark-bg);color:var(--text
 </div>
 
 <div class="main">
-
-  <!-- Alert banner -->
-  <div class="alert-banner" id="alertBanner">
-    <div class="alert-banner-title">⚠️ تقارير ناقصة لهذا اليوم</div>
-    <div id="alertItems"></div>
-  </div>
 
   <!-- Filter -->
   <div class="filter-bar">
@@ -389,7 +379,7 @@ async function loadReports(from, to, supervisor, rtype){
 
     _allReports = await sbGet(q);
 
-    checkAndRenderAlerts();
+
     renderList(_allReports);
   }catch(e){
     document.getElementById('reportsList').innerHTML =
@@ -397,32 +387,6 @@ async function loadReports(from, to, supervisor, rtype){
   }
 }
 
-// ── Completeness check ────────────────────────────────────────────────────────
-function checkAndRenderAlerts(){
-  const today = new Date().toISOString().substring(0,10);
-  // فحص اليوم الحالي فقط
-  const todayReports = _allReports.filter(r => r.report_date.startsWith(today));
-  const byLoc = {};
-  todayReports.forEach(r=>{
-    if(!byLoc[r.location]) byLoc[r.location] = new Set();
-    byLoc[r.location].add(r.period);
-  });
-
-  const alerts = [];
-  Object.entries(EXPECTED_PERIODS).forEach(([loc, expected])=>{
-    const covered = byLoc[loc] || new Set();
-    const missing = expected.filter(p => !covered.has(p));
-    if(missing.length) alerts.push({loc, missing});
-  });
-
-  const banner = document.getElementById('alertBanner');
-  const items  = document.getElementById('alertItems');
-  if(!alerts.length){ banner.style.display='none'; return; }
-  banner.style.display = 'block';
-  items.innerHTML = alerts.map(a=>
-    `<div class="alert-item"><strong>${a.loc}</strong> — الفترات الناقصة: ${a.missing.join('، ')}</div>`
-  ).join('');
-}
 
 // ── Sort ──────────────────────────────────────────────────────────────────────
 function sortReports(reports){
@@ -604,7 +568,7 @@ async function execDelete(id){
     await sbDel(`report_entries?report_id=eq.${id}`);
     await sbDel(`daily_reports?id=eq.${id}`);
     _allReports = _allReports.filter(r=>r.id!==id);
-    checkAndRenderAlerts();
+
     renderList(_allReports);
     toast('✓ تم حذف التقرير','success');
   }catch{ toast('خطأ في الحذف','error'); }
