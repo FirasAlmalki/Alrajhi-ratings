@@ -524,7 +524,7 @@ async function initData(){
     }
 
     document.getElementById('loading-overlay').style.display='none';
-    renderApp();
+    render();
   } catch(e){
     document.getElementById('loading-overlay').innerHTML =
       '<div class="error-msg">⚠️ تعذّر تحميل البيانات<br><small>'+e.message+'</small></div>';
