@@ -513,9 +513,9 @@ function dSetField(key,idx,field,val){
 
 // ── Presence template ─────────────────────────────────────────────────────────
 function renderPresenceTemplate(){
-  const centers = (CENTERS_BY_LOC[S.location]||[]).map(c=>({center:c,type:'center',isPresent:false,hasNotes:false,notes:''}));
+  const centers = (CENTERS_BY_LOC[S.location]||[]).map(c=>({center:c,type:'center',isPresent:true,hasNotes:false,notes:''}));
   const depts   = S.location==='مكة المكرمة'
-    ? DEPARTMENTS.map(d=>({center:d,type:'dept',isPresent:false,hasNotes:false,notes:''}))
+    ? DEPARTMENTS.map(d=>({center:d,type:'dept',isPresent:true,hasNotes:false,notes:''}))
     : [];
   S.presence = [...centers, ...depts];
   rebuildPresenceUI();
