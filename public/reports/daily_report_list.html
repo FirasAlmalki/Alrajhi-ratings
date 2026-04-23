@@ -495,8 +495,8 @@ async function viewReport(id){
         thead='<th>#</th><th>المركز</th><th>الحالة</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>مغلق</td></tr>`).join('');
       } else if(secKey==='departments'){
-        thead='<th>#</th><th>الإدارة</th><th>ملاحظات</th><th>الإجراء</th><th>النتيجة</th>';
-        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.action_taken||'—'}</td><td>${e.result||'—'}</td></tr>`).join('');
+        thead='<th>#</th><th>الإدارة</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
       } else if(secKey==='reception'||secKey==='departure'){
         thead='<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>الجنسية</th><th>ملاحظات</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.pilgrim_count??'—'}</td><td>${e.nationality||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
@@ -504,8 +504,8 @@ async function viewReport(id){
         thead='<th>#</th><th>المركز / الإدارة</th><th>متواجدون</th><th>ملاحظات</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.has_madar_report?(e.notes||'نعم'):'لا'}</td></tr>`).join('');
       } else {
-        thead='<th>#</th><th>المركز</th><th>ملاحظات</th><th>الإجراء</th><th>النتيجة</th>';
-        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?(e.notes||'نعم'):'لا'}</td><td>${e.action_taken||'—'}</td><td>${e.result||'—'}</td></tr>`).join('');
+        thead='<th>#</th><th>المركز</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?(e.notes||'نعم'):'لا'}</td></tr>`).join('');
       }
       sectionsHtml += `<div class="msec">
         <div class="msec-title">${icon} ${label} (${items.length})</div>
@@ -746,8 +746,8 @@ function buildDayPrint(reports, entriesByReport, date){
         thead='<th>#</th><th>المركز</th><th>الحالة</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>مغلق</td></tr>`).join('');
       } else if(secKey==='departments'){
-        thead='<th>#</th><th>الإدارة</th><th>ملاحظات</th><th>الإجراء</th><th>النتيجة</th>';
-        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.action_taken||'—'}</td><td>${e.result||'—'}</td></tr>`).join('');
+        thead='<th>#</th><th>الإدارة</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
       } else if(secKey==='reception'||secKey==='departure'){
         thead='<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>الجنسية</th><th>ملاحظات</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.pilgrim_count??'—'}</td><td>${e.nationality||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
@@ -755,8 +755,8 @@ function buildDayPrint(reports, entriesByReport, date){
         thead='<th>#</th><th>المركز / الإدارة</th><th>متواجدون</th><th>ملاحظات</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.has_madar_report?(e.notes||'نعم'):'لا'}</td></tr>`).join('');
       } else {
-        thead='<th>#</th><th>المركز</th><th>ملاحظات</th><th>الإجراء</th><th>النتيجة</th>';
-        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?(e.notes||'نعم'):'لا'}</td><td>${e.action_taken||'—'}</td><td>${e.result||'—'}</td></tr>`).join('');
+        thead='<th>#</th><th>المركز</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?(e.notes||'نعم'):'لا'}</td></tr>`).join('');
       }
       html += `<div class="psec"><div class="psec-title">${label} (${items.length})</div>
         <table class="ptable"><thead><tr>${thead}</tr></thead><tbody>${rows}</tbody></table></div>`;
