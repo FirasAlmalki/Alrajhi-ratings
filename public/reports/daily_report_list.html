@@ -24,6 +24,7 @@ button,input,select,textarea{min-width:0;max-width:100%;}
 .page-hdr-user{font-size:0.78rem;color:var(--text-muted);}
 .export-day-btn{padding:7px 14px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;border:none;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);color:var(--gold);transition:background .15s;}
 .export-day-btn:hover{background:rgba(201,168,76,.28);}
+.export-day-btn:disabled{opacity:.55;cursor:not-allowed;}
 
 
 
@@ -105,15 +106,6 @@ button,input,select,textarea{min-width:0;max-width:100%;}
 .btn-cancel{flex:1;padding:9px;background:rgba(255,255,255,.05);border:1px solid var(--card-border);border-radius:8px;color:var(--text-muted);font-family:'Tajawal',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;}
 .btn-cancel:hover{border-color:var(--gold);color:var(--gold);}
 
-/* Export day modal */
-#exportModal .modal-box{max-width:460px;}
-.exp-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
-.exp-label{font-size:0.75rem;color:var(--text-muted);font-weight:600;}
-.exp-select{background:var(--deep-navy);border:1px solid var(--card-border);border-radius:8px;padding:8px 11px;color:var(--text-light);font-family:'Tajawal',sans-serif;font-size:0.87rem;outline:none;width:100%;}
-.exp-select:focus{border-color:var(--gold);}
-.btn-export-go{flex:1;padding:9px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);border-radius:8px;color:var(--gold);font-family:'Tajawal',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;}
-.btn-export-go:hover{background:rgba(201,168,76,.28);}
-
 /* Toast */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:10px;font-size:0.88rem;font-weight:600;z-index:9999;display:none;white-space:nowrap;}
 .toast.show{display:block;animation:toastIn .25s ease;}
@@ -175,7 +167,7 @@ button,input,select,textarea{min-width:0;max-width:100%;}
     <div class="page-hdr-title">📁 سجل التقارير</div>
     <div class="page-hdr-user" id="userLabel"></div>
   </div>
-  <button class="export-day-btn" onclick="openExportModal()">📤 تصدير يوم كامل</button>
+  <button class="export-day-btn" id="exportCurrentBtn" onclick="doExportDay()">📤 تصدير النتائج</button>
 </div>
 
 <div class="main">
@@ -248,45 +240,6 @@ button,input,select,textarea{min-width:0;max-width:100%;}
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeDeleteModal()">إلغاء</button>
       <button class="btn-del-confirm" onclick="confirmDelete()">تأكيد الحذف</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Export Day Modal ─────────────────────────────────────────────────────── -->
-<div class="modal-overlay" id="exportModal" onclick="closeExportModal(event)">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <div class="modal-hdr">
-      <span class="modal-title">📤 تصدير يوم كامل</span>
-      <button class="modal-close" onclick="closeExportModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="exp-row">
-        <div class="exp-label">اختر التاريخ</div>
-        <input type="date" class="exp-select" id="expDate">
-      </div>
-      <div class="exp-row">
-        <div class="exp-label">الموقع</div>
-        <select class="exp-select" id="expLoc">
-          <option value="">— الكل —</option>
-          <option value="مكة المكرمة">مكة المكرمة</option>
-          <option value="المدينة المنورة">المدينة المنورة</option>
-          <option value="عرفة">عرفة</option>
-          <option value="منى">منى</option>
-          <option value="مزدلفة">مزدلفة</option>
-        </select>
-      </div>
-      <div class="exp-row">
-        <div class="exp-label">نوع التقرير</div>
-        <select class="exp-select" id="expType">
-          <option value="">— الكل —</option>
-          <option value="daily">التقرير اليومي</option>
-          <option value="presence">التواجد</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeExportModal()">إلغاء</button>
-      <button class="btn-export-go" onclick="doExportDay()">📥 تصدير Excel</button>
     </div>
   </div>
 </div>
@@ -381,24 +334,34 @@ async function sbDel(path){
     });
   }
 
-  // default export date = today
-  document.getElementById('expDate').value = new Date().toISOString().substring(0,10);
-
   await loadReports();
 })();
 
 // ── Load ──────────────────────────────────────────────────────────────────────
+function buildReportsQuery(from, to, supervisor, rtype){
+  let q = 'daily_reports?select=*&order=report_date.desc';
+  if(supervisor) q += `&supervisor=eq.${encodeURIComponent(supervisor)}`;
+  if(from) q += `&report_date=gte.${from}T00:00:00`;
+  if(to)   q += `&report_date=lte.${to}T23:59:59`;
+  if(rtype) q += `&report_type=eq.${rtype}`;
+  return q;
+}
+async function fetchReports(from, to, supervisor, rtype){
+  return await sbGet(buildReportsQuery(from, to, supervisor, rtype));
+}
+function getCurrentFilters(){
+  return {
+    from: document.getElementById('fFrom').value || '',
+    to: document.getElementById('fTo').value || '',
+    supervisor: (isAdmin||isManager) ? document.getElementById('fSupervisor').value || '' : '',
+    rtype: document.getElementById('fType').value || '',
+  };
+}
 async function loadReports(from, to, supervisor, rtype){
   document.getElementById('reportsList').innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
   try{
     // كل المستخدمين يشوفون كل التقارير
-    let q = 'daily_reports?select=*&order=report_date.desc';
-    if(supervisor) q += `&supervisor=eq.${encodeURIComponent(supervisor)}`;
-    if(from) q += `&report_date=gte.${from}T00:00:00`;
-    if(to)   q += `&report_date=lte.${to}T23:59:59`;
-    if(rtype) q += `&report_type=eq.${rtype}`;
-
-    _allReports = await sbGet(q);
+    _allReports = await fetchReports(from, to, supervisor, rtype);
 
 
     renderList(_allReports);
@@ -410,12 +373,37 @@ async function loadReports(from, to, supervisor, rtype){
 
 
 // ── Sort ──────────────────────────────────────────────────────────────────────
+function locationRank(location){
+  return LOCATION_ORDER[location] || 99;
+}
+function periodRank(period){
+  const raw = String(period||'').trim();
+  if(PERIOD_ORDER[raw]) return PERIOD_ORDER[raw];
+  const normalized = raw
+    .replace(/[إأآ]/g,'ا')
+    .replace(/\s+/g,' ')
+    .replace(/^الفترة\s+/,'')
+    .replace(/^فترة\s+/,'')
+    .trim();
+  if(['اولى','الاولى','اول','الاول'].includes(normalized)) return 1;
+  if(['ثانية','الثانية','ثاني','الثاني'].includes(normalized)) return 2;
+  if(['ثالثة','الثالثة','ثالث','الثالث'].includes(normalized)) return 3;
+  if(normalized.includes('مشاعر')) return 4;
+  return 99;
+}
+function compareLocationThenPeriod(aLocation, aPeriod, bLocation, bPeriod){
+  const lo = locationRank(aLocation) - locationRank(bLocation);
+  if(lo!==0) return lo;
+  const ln = String(aLocation||'').localeCompare(String(bLocation||''), 'ar');
+  if(ln!==0) return ln;
+  const po = periodRank(aPeriod) - periodRank(bPeriod);
+  if(po!==0) return po;
+  return String(aPeriod||'').localeCompare(String(bPeriod||''), 'ar');
+}
 function sortReports(reports){
   return [...reports].sort((a,b)=>{
-    const lo = (LOCATION_ORDER[a.location]||9) - (LOCATION_ORDER[b.location]||9);
-    if(lo!==0) return lo;
-    const po = (PERIOD_ORDER[a.period]||9) - (PERIOD_ORDER[b.period]||9);
-    if(po!==0) return po;
+    const mainSort = compareLocationThenPeriod(a.location, a.period, b.location, b.period);
+    if(mainSort!==0) return mainSort;
     return new Date(b.report_date) - new Date(a.report_date);
   });
 }
@@ -475,11 +463,8 @@ function escAttr(s){ return s.replace(/'/g,"\\'"); }
 
 // ── Filter ────────────────────────────────────────────────────────────────────
 function applyFilter(){
-  const from = document.getElementById('fFrom').value;
-  const to   = document.getElementById('fTo').value;
-  const sup  = (isAdmin||isManager) ? document.getElementById('fSupervisor').value : '';
-  const rtype= document.getElementById('fType').value;
-  loadReports(from||null, to||null, sup||null, rtype||null);
+  const {from, to, supervisor, rtype} = getCurrentFilters();
+  loadReports(from||null, to||null, supervisor||null, rtype||null);
 }
 function clearFilter(){
   ['fFrom','fTo','fType'].forEach(id=>{ document.getElementById(id).value=''; });
@@ -601,33 +586,41 @@ function closeDeleteModal(e){
   }
 }
 
-// ── Export day modal ──────────────────────────────────────────────────────────
-function openExportModal(){
-  document.getElementById('exportModal').classList.add('show');
-}
-function closeExportModal(e){
-  if(!e || e.target===document.getElementById('exportModal'))
-    document.getElementById('exportModal').classList.remove('show');
-}
-
+// ── Export current filtered list ──────────────────────────────────────────────
 async function doExportDay(){
-  const date = document.getElementById('expDate').value;
-  const loc  = document.getElementById('expLoc').value;
-  const rtype= document.getElementById('expType').value;
-  if(!date){ toast('اختر التاريخ أولاً','error'); return; }
+  const {from, to, supervisor, rtype} = getCurrentFilters();
+  const exportBtn = document.getElementById('exportCurrentBtn');
+  const oldLabel = exportBtn.textContent;
+  exportBtn.disabled = true;
+  exportBtn.textContent = '⏳ جاري التصدير...';
 
-  let filtered = _allReports.filter(r=>r.report_date.startsWith(date));
-  if(loc)   filtered = filtered.filter(r=>r.location===loc);
-  if(rtype) filtered = filtered.filter(r=>(r.report_type||'daily')===rtype);
-  if(!filtered.length){ toast('لا توجد تقارير لهذا اليوم','error'); return; }
+  let filtered = [];
+  try{
+    filtered = await fetchReports(from||null, to||null, supervisor||null, rtype||null);
+    _allReports = filtered;
+    renderList(_allReports);
+  }catch(e){
+    toast('خطأ في تجهيز التصدير','error');
+    exportBtn.disabled = false;
+    exportBtn.textContent = oldLabel;
+    return;
+  }
+  if(!filtered.length){
+    toast('لا توجد تقارير حسب الفلاتر الحالية','error');
+    exportBtn.disabled = false;
+    exportBtn.textContent = oldLabel;
+    return;
+  }
 
+  try{
+  // sortReports starts with location, then period, then latest report time.
   const sorted = sortReports(filtered);
   const entriesArr = await Promise.all(
     sorted.map(r=>sbGet(`report_entries?report_id=eq.${r.id}&select=*&order=sort_order`))
   );
 
   // ── Build focused daily export rows ───────────────────────────────────────
-  const COLS = ['الفترة','القسم','المركز / الإدارة','عدد الحجاج','ملاحظات'];
+  const COLS = ['الموقع','الفترة','القسم','المركز / الإدارة','عدد الحجاج','ملاحظات'];
   const dataRows = [];
   sorted.forEach((r,ri)=>{
     const entries = entriesArr[ri]||[];
@@ -636,6 +629,7 @@ async function doExportDay(){
       const isPilgrim  = e.section==='reception'||e.section==='departure';
       const isPresence = e.section==='presence';
       dataRows.push([
+        r.location||'',
         r.period||'',
         secLabel,
         e.center||'',
@@ -645,11 +639,14 @@ async function doExportDay(){
           : (e.has_notes?(e.notes||'نعم'):'لا'),
       ]);
     });
-    if(!entries.length) dataRows.push([r.period||'','—','—','','']);
+    if(!entries.length) dataRows.push([r.location||'',r.period||'','—','—','','']);
   });
+  dataRows.sort((a,b)=>compareLocationThenPeriod(a[0], a[1], b[0], b[1]));
 
   if(typeof ExcelJS === 'undefined'){
     toast('تعذر تحميل مكتبة Excel، حاول مرة أخرى','error');
+    exportBtn.disabled = false;
+    exportBtn.textContent = oldLabel;
     return;
   }
 
@@ -659,7 +656,8 @@ async function doExportDay(){
     : rtype === 'daily'
       ? 'التقرير اليومي'
       : 'التقرير اليومي والتواجد';
-  const title = `إدارة الامتثال والالتزام — ${reportTypeLabel} تاريخ  ${date}`;
+  const scopeLabel = buildExportScopeLabel(from, to);
+  const title = `إدارة الامتثال والالتزام — ${reportTypeLabel} ${scopeLabel}`;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Al Rajhi Hajj';
   workbook.created = new Date();
@@ -671,6 +669,7 @@ async function doExportDay(){
   });
 
   ws.columns = [
+    {width:18},
     {width:16},
     {width:24},
     {width:42},
@@ -678,13 +677,13 @@ async function doExportDay(){
     {width:46}
   ];
 
-  ws.addRow(['', title, '', '', '']);
-  ws.addRow(['', '', '', '', '']);
+  ws.addRow(['', title, '', '', '', '']);
+  ws.addRow(['', '', '', '', '', '']);
   ws.addRow(COLS);
   dataRows.forEach(row=>ws.addRow(row));
 
-  ws.mergeCells('B1:E1');
-  ws.autoFilter = {from:'A3',to:'E3'};
+  ws.mergeCells('B1:F1');
+  ws.autoFilter = {from:'A3',to:'F3'};
 
   const argb = color => 'FF'+color;
   const borderGold = {style:'thin',color:{argb:argb('C9A84C')}};
@@ -735,8 +734,30 @@ async function doExportDay(){
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
-  saveBlob(buffer, `التقرير_اليومي_${date}.xlsx`);
-  closeExportModal();
+  saveBlob(buffer, `تقارير_السجل_${buildExportFileSuffix(from, to)}.xlsx`);
+  }catch(e){
+    console.error('Excel export failed:', e);
+    toast('خطأ في التصدير','error');
+  }finally{
+    exportBtn.disabled = false;
+    exportBtn.textContent = oldLabel;
+  }
+}
+
+function buildExportScopeLabel(from, to){
+  if(from && to && from === to) return `تاريخ  ${from}`;
+  if(from && to) return `للفترة ${from} إلى ${to}`;
+  if(from) return `من تاريخ  ${from}`;
+  if(to) return `حتى تاريخ  ${to}`;
+  return 'حسب الفلاتر الحالية';
+}
+
+function buildExportFileSuffix(from, to){
+  if(from && to && from === to) return from;
+  if(from && to) return `${from}_to_${to}`;
+  if(from) return `from_${from}`;
+  if(to) return `to_${to}`;
+  return new Date().toISOString().substring(0,10);
 }
 
 async function imageToBase64(url){
