@@ -17,6 +17,31 @@ export default function PhasePage() {
   const { role, permissions, data, syncing, filters, sort, updateSort } = useApp();
   
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const pageData = data[page];
+  const locations = useMemo(() => pageData?.locations || [], [pageData]);
+  const currentSort = sort[page] || 'pct';
+  const currentFilter = filters[page];
+
+  // Apply filters & sort. Keep this hook before conditional returns.
+  const visibleLocs = useMemo(() => {
+    let list = locations;
+    if (currentFilter) {
+      list = list.filter((l: any) => currentFilter.has(l.key));
+    }
+    const sortField = currentSort.replace('_asc', '');
+    const sortDir   = currentSort.endsWith('_asc') ? 1 : -1;
+    list = [...list].sort((a: any, b: any) => {
+      if (sortField === 'pct') return sortDir * (a.pct - b.pct);
+      if (sortField === 'date') {
+        if (!a.date && !b.date) return 0;
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        return sortDir * (a.date > b.date ? -1 : a.date < b.date ? 1 : 0);
+      }
+      return 0;
+    });
+    return list;
+  }, [locations, currentFilter, currentSort]);
 
   // Validate route
   if (!PHASES.find(p => p.key === page)) {
@@ -27,7 +52,6 @@ export default function PhasePage() {
     return null;
   }
 
-  const pageData = data[page];
   const label = PAGE_LABELS[page];
   const desc = PAGE_DESCS[page];
 
@@ -59,33 +83,6 @@ export default function PhasePage() {
       </div>
     );
   }
-
-  const { locations } = pageData;
-  const currentSort = sort[page] || 'pct';
-  const currentFilter = filters[page];
-
-  // Apply filters & sort
-  const visibleLocs = useMemo(() => {
-    let list = locations;
-    // Filter
-    if (currentFilter) {
-      list = list.filter((l: any) => currentFilter.has(l.key));
-    }
-    // Sort
-    const sortField = currentSort.replace('_asc', '');
-    const sortDir   = currentSort.endsWith('_asc') ? 1 : -1;
-    list = [...list].sort((a: any, b: any) => {
-      if (sortField === 'pct') return sortDir * (a.pct - b.pct);
-      if (sortField === 'date') {
-        if (!a.date && !b.date) return 0;
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        return sortDir * (a.date > b.date ? -1 : a.date < b.date ? 1 : 0);
-      }
-      return 0;
-    });
-    return list;
-  }, [locations, currentFilter, currentSort]);
 
   const handleExport = (cols: string[]) => {
     doExport(page, pageData, cols, currentFilter || null);

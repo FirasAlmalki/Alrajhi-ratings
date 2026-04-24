@@ -58,11 +58,12 @@ export default function SettingsPage() {
               <input 
                 value={(urls as any)[s.k]}
                 onChange={e => setUrls({ ...urls, [s.k]: e.target.value })}
-                style={{ width: '100%', background: 'var(--deep-navy)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-main)', fontSize: '13px', fontFamily: 'inherit', direction: 'ltr' }}
+                className="settings-url-input"
+                style={{ width: '100%', background: 'var(--deep-navy)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '8px 12px', color: 'var(--text-light)', fontSize: '13px', fontFamily: 'inherit', direction: 'ltr' }}
               />
             </div>
           ))}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+          <div className="settings-actions-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
             <button className="export-btn" onClick={handleSave}>💾 حفظ الروابط</button>
             {saved && <span style={{ color: 'var(--green)', fontSize: '13px' }}>✓ تم الحفظ</span>}
           </div>
