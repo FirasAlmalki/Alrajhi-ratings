@@ -189,6 +189,9 @@ textarea.form-control{resize:vertical;min-height:56px;}
       <div class="form-group">
         <div class="form-label">الفترة</div>
         <div class="period-display" id="periodDisplay">—</div>
+        <select class="form-control" id="periodSel" onchange="onPeriodChange()" style="display:none">
+          <option value="">— اختر الفترة —</option>
+        </select>
       </div>
       <div class="form-group">
         <div class="form-label">التاريخ والوقت</div>
@@ -257,9 +260,9 @@ const SUPERVISORS_META = [
   {name:'رامي الغامدي',        period:'المشاعر',    location:'عرفة'},
   {name:'رامي الغامدي',        period:'المشاعر',    location:'منى'},
   {name:'رامي الغامدي',        period:'المشاعر',    location:'مزدلفة'},
-  {name:'عبدالمجيد الخطيري',  period:'فترة أولى',  location:'المدينة المنورة'},
+  {name:'وراد سمان',  period:'فترة أولى',  location:'المدينة المنورة'},
   {name:'وراد سمان',           period:'فترة ثانية', location:'المدينة المنورة'},
-  {name:'فترة ثالث',           period:'فترة ثالثة', location:'المدينة المنورة'},
+  {name:'عبدالمجيد الخطيري',           period:'فترة ثالثة', location:'المدينة المنورة'},
 ];
 
 const _MAKKAH_CENTERS = [
@@ -325,6 +328,40 @@ const S = {
   _presetUser: _userName,
 };
 
+function resetReportTemplate(){
+  S.reportType = null;
+  S.daily = { reception:[], departure:[], field_tours:[], records:[] };
+  S.presence = [];
+  document.getElementById('dailyTemplate').style.display = 'none';
+  document.getElementById('presenceTemplate').style.display = 'none';
+  document.getElementById('tplDaily').classList.remove('active');
+  document.getElementById('tplPresence').classList.remove('active');
+}
+function setTemplateAvailability(){
+  document.getElementById('tplSection').style.display =
+    (S.location && S.supervisor && S.period) ? 'block' : 'none';
+}
+function setPeriodDisplay(value){
+  const display = document.getElementById('periodDisplay');
+  const select = document.getElementById('periodSel');
+  display.style.display = 'flex';
+  select.style.display = 'none';
+  display.textContent = value || '—';
+}
+function setPeriodChoices(periods){
+  const display = document.getElementById('periodDisplay');
+  const select = document.getElementById('periodSel');
+  display.style.display = 'none';
+  select.style.display = 'block';
+  select.innerHTML = '<option value="">— اختر الفترة —</option>';
+  periods.forEach(period=>{
+    const o = document.createElement('option');
+    o.value = period;
+    o.textContent = period;
+    select.appendChild(o);
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 (function init(){
   const now = new Date();
@@ -336,14 +373,11 @@ const S = {
 // ── Location change ───────────────────────────────────────────────────────────
 function onLocChange(){
   S.location = document.getElementById('locSel').value;
-  S.reportType = null;
-  S.daily = { reception:[], departure:[], field_tours:[], records:[] };
-  S.presence = [];
-  document.getElementById('tplSection').style.display = 'none';
-  document.getElementById('dailyTemplate').style.display = 'none';
-  document.getElementById('presenceTemplate').style.display = 'none';
-  document.getElementById('tplDaily').classList.remove('active');
-  document.getElementById('tplPresence').classList.remove('active');
+  S.supervisor = '';
+  S.period = '';
+  resetReportTemplate();
+  setTemplateAvailability();
+  setPeriodDisplay('');
 
   const supSel = document.getElementById('supSel');
   supSel.disabled = !S.location;
@@ -351,9 +385,11 @@ function onLocChange(){
   if(!S.location) return;
 
   const sups = SUPERVISORS_META.filter(s=>s.location===S.location);
-  sups.forEach(s=>{
+  const supNames = [...new Set(sups.map(s=>s.name))];
+  supNames.forEach(name=>{
     const o = document.createElement('option');
-    o.value = s.name; o.textContent = `${s.name}`;
+    o.value = name;
+    o.textContent = name;
     supSel.appendChild(o);
   });
 
@@ -367,15 +403,40 @@ function onLocChange(){
 function onSupChange(){
   const name = document.getElementById('supSel').value;
   S.supervisor = name;
-  const meta = SUPERVISORS_META.find(s=>s.name===name);
-  S.period = meta ? meta.period : '';
-  document.getElementById('periodDisplay').textContent = S.period || '—';
-  document.getElementById('tplSection').style.display = (name && S.location) ? 'block' : 'none';
+  S.period = '';
+  resetReportTemplate();
+  if(!name || !S.location){
+    setPeriodDisplay('');
+    setTemplateAvailability();
+    return;
+  }
+
+  const periods = [...new Set(
+    SUPERVISORS_META
+      .filter(s=>s.location===S.location && s.name===name)
+      .map(s=>s.period)
+      .filter(Boolean)
+  )];
+  if(periods.length === 1){
+    S.period = periods[0];
+    setPeriodDisplay(S.period);
+  } else if(periods.length > 1){
+    setPeriodChoices(periods);
+  } else {
+    setPeriodDisplay('');
+  }
+  setTemplateAvailability();
+}
+
+function onPeriodChange(){
+  S.period = document.getElementById('periodSel').value;
+  resetReportTemplate();
+  setTemplateAvailability();
 }
 
 // ── Template selection ────────────────────────────────────────────────────────
 function selectTemplate(type){
-  if(!S.location||!S.supervisor){ toast('اختر الموقع والمشرف أولاً','error'); return; }
+  if(!S.location||!S.supervisor||!S.period){ toast('اختر الموقع والمشرف والفترة أولاً','error'); return; }
   S.reportType = type;
   document.getElementById('tplDaily').classList.toggle('active', type==='daily');
   document.getElementById('tplPresence').classList.toggle('active', type==='presence');
@@ -599,7 +660,7 @@ function pSetField(idx,field,val){ if(S.presence[idx]) S.presence[idx][field]=va
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 async function saveReport(){
-  if(!S.location||!S.supervisor){ toast('اختر الموقع والمشرف أولاً','error'); return; }
+  if(!S.location||!S.supervisor||!S.period){ toast('اختر الموقع والمشرف والفترة أولاً','error'); return; }
   if(!S.reportType){ toast('اختر نوع التقرير','error'); return; }
   const btn=document.getElementById('btnSave');
   btn.disabled=true; btn.textContent='⏳ جاري الحفظ...';
