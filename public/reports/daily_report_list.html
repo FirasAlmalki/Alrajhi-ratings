@@ -341,8 +341,8 @@ async function sbDel(path){
 function buildReportsQuery(from, to, supervisor, rtype){
   let q = 'daily_reports?select=*&order=report_date.desc';
   if(supervisor) q += `&supervisor=eq.${encodeURIComponent(supervisor)}`;
-  if(from) q += `&report_date=gte.${from}T00:00:00+03:00`;
-  if(to)   q += `&report_date=lte.${to}T23:59:59+03:00`;
+  if(from) q += `&report_date=gte.${from}T00:00:00%2B03:00`;
+  if(to)   q += `&report_date=lte.${to}T23:59:59%2B03:00`;
   if(rtype) q += `&report_type=eq.${rtype}`;
   return q;
 }
