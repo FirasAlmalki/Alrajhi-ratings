@@ -441,7 +441,7 @@ function renderList(reports){
 
 function reportCard(r){
   const d  = new Date(r.report_date);
-  const dt = d.toLocaleDateString('ar-SA')+' '+d.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+  const dt = d.toLocaleDateString('en-GB')+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   const rtype = r.report_type === 'presence' ? 'التواجد' : 'اليومي';
   return `
     <div class="report-card">
@@ -484,7 +484,7 @@ async function viewReport(id){
     const r = rArr[0];
     if(!r){ document.getElementById('modalBody').innerHTML='<div class="empty-state">تعذر تحميل التقرير</div>'; return; }
     const d  = new Date(r.report_date);
-    const dt = d.toLocaleDateString('ar-SA')+' '+d.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+    const dt = d.toLocaleDateString('en-GB')+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('modalTitle').textContent = `📋 ${r.location} — ${r.period} — ${dt}`;
 
     const grouped = {};
@@ -793,7 +793,7 @@ function buildDayPrint(reports, entriesByReport, date){
         <div class="ptitle-main">إدارة الامتثال والالتزام</div>
         <div class="ptitle-sub">تقارير يوم ${date}</div>
       </div>
-      <div style="font-size:8pt;color:#555">${new Date().toLocaleDateString('ar-SA')}</div>
+      <div style="font-size:8pt;color:#555">${new Date().toLocaleDateString('en-GB')}</div>
     </div>`;
 
   let lastLoc = null;
@@ -802,7 +802,7 @@ function buildDayPrint(reports, entriesByReport, date){
     if(lastLoc && lastLoc!==r.location) html += `<div class="ploc-divider"></div>`;
     lastLoc = r.location;
     const icon = ZONE_ICONS[r.location]||'📍';
-    const t = new Date(r.report_date).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+    const t = new Date(r.report_date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     html += `<div class="preport-block">
       <div class="preport-hdr">
         <span>${icon} ${r.location} — ${r.period} — ${r.supervisor}</span>
@@ -856,7 +856,7 @@ function printCurrentReport(){
 }
 function printReportDoc(r, entries){
   const d  = new Date(r.report_date);
-  const dt = d.toLocaleDateString('ar-SA');
+  const dt = d.toLocaleDateString('en-GB');
   const map = {};
   entries.forEach(e=>{ (map[e.section]=map[e.section]||[]).push(e); });
   const body = buildDayPrint([r], {[r.id]:entries}, dt);
