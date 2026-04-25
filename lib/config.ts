@@ -34,7 +34,7 @@ export const REPORTS: Report[] = [
   {
     key:   'pilgrim_heatmap',
     label: 'خريطة وصول الحجاج',
-    desc:  'خريطة حرارة تفاعلية تعرض أعداد الحجاج حسب المدينة والساعة والتاريخ — موسم ١٤٤٧',
+    desc:  'خريطة وصول الحجاج حسب المدينة والساعة والتاريخ',
     icon:  '🕋',
     file:  '/reports/pilgrim_heatmap.html'
   },
@@ -55,7 +55,7 @@ export const REPORTS: Report[] = [
   {
     key:   'pakistan_flights',
     label: 'وصول رحلات باكستان إلى مكة المكرمة',
-    desc:  'تقويم حراري يعرض وصول رحلات الحجاج الباكستانيين — بيانات فعلية من الجدول الرسمي',
+    desc:  'تقويم وصول حجاج باكستان إلى مكة المكرمة',
     icon:  '✈️',
     file:  '/reports/pakistan_flights.html'
   }

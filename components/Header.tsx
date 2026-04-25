@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useApp } from '../context/AppContext';
 import { PAGE_LABELS } from '../lib/config';
 
@@ -10,6 +11,7 @@ interface HeaderProps {
 }
 
 export default function Header({ pageId, onToggleSidebar }: HeaderProps) {
+  const router = useRouter();
   const title = PAGE_LABELS[pageId] || 'جاهزية المشاعر المقدسة';
   const PHASE_PAGES = ['arafa', 'mina', 'masaken'];
   const subtitle = PHASE_PAGES.includes(pageId) ? 'مرحلة الجاهزية' : '';
@@ -20,7 +22,7 @@ export default function Header({ pageId, onToggleSidebar }: HeaderProps) {
         <button className="hamburger" onClick={onToggleSidebar} aria-label="القائمة">
           <span></span><span></span><span></span>
         </button>
-        <img src="/Alrajhi.png" alt="الراجحي" className="logo-img-sm" />
+        <img src="/Alrajhi.png" alt="الراجحي" className="logo-img-sm" style={{cursor:'pointer'}} onClick={() => router.push('/')} />
       </div>
       <div className="header-center">
         <div className="header-title" id="hTitle">{title}</div>
