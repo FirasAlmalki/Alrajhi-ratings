@@ -67,7 +67,10 @@ export default function LoginPage() {
         
         <button className="login-btn" onClick={handleLogin} disabled={loading}>دخول</button>
         <div className="login-error">{error}</div>
-        <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+        <div style={{ marginTop: '16px', fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7 }}>
+          تم التطوير من قبل إدارة الامتثال والالتزام
+        </div>
+        <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--text-muted)' }}>
           للاستفسار: 0533551975
         </div>
       </div>
