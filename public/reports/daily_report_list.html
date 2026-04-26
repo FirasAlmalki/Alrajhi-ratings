@@ -106,6 +106,27 @@ button,input,select,textarea{min-width:0;max-width:100%;}
 .btn-cancel{flex:1;padding:9px;background:rgba(255,255,255,.05);border:1px solid var(--card-border);border-radius:8px;color:var(--text-muted);font-family:'Tajawal',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;}
 .btn-cancel:hover{border-color:var(--gold);color:var(--gold);}
 
+/* Edit button */
+.act-edit{background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);color:#7ab8ff;}
+.act-edit:hover{background:rgba(88,166,255,.18);}
+/* Edit password modal */
+#editPwModal .modal-box{max-width:420px;}
+/* Edit form modal */
+#editFormModal .modal-box{max-width:680px;max-height:90vh;}
+.edit-field-group{margin-bottom:14px;}
+.edit-field-lbl{font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;display:block;}
+.edit-input{width:100%;background:var(--deep-navy);border:1px solid var(--card-border);border-radius:8px;padding:8px 12px;color:var(--text-light);font-family:'Tajawal',sans-serif;font-size:0.85rem;outline:none;}
+.edit-input:focus{border-color:var(--gold);}
+.edit-textarea{resize:vertical;min-height:54px;}
+.edit-section-block{margin-bottom:16px;}
+.edit-section-title{font-size:0.82rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.15);border-radius:8px 8px 0 0;padding:7px 12px;margin-bottom:6px;}
+.edit-entry-row{background:rgba(255,255,255,.03);border:1px solid var(--card-border);border-radius:0 0 8px 8px;padding:10px 12px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px;}
+.edit-entry-center{font-size:0.8rem;font-weight:600;color:var(--text-light);padding-bottom:6px;border-bottom:1px solid var(--card-border);}
+.edit-entry-field{display:flex;flex-direction:column;gap:3px;}
+.btn-edit-save{flex:1;padding:9px;background:rgba(76,175,138,.15);border:1px solid rgba(76,175,138,.35);border-radius:8px;color:var(--green);font-family:'Tajawal',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;}
+.btn-edit-save:hover{background:rgba(76,175,138,.28);}
+.edit-note{font-size:0.73rem;color:var(--text-muted);font-style:italic;margin-bottom:8px;}
+
 /* Toast */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:10px;font-size:0.88rem;font-weight:600;z-index:9999;display:none;white-space:nowrap;}
 .toast.show{display:block;animation:toastIn .25s ease;}
@@ -244,6 +265,46 @@ button,input,select,textarea{min-width:0;max-width:100%;}
   </div>
 </div>
 
+<!-- ── Edit Password Modal ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="editPwModal" onclick="closeEditPwModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <span class="modal-title">✏️ تعديل التقرير</span>
+      <button class="modal-close" onclick="closeEditPwModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="del-info">
+        لتعديل هذا التقرير، أدخل كلمة مرور المشرف:<br>
+        <strong id="editPwSupName"></strong>
+      </div>
+      <div class="del-pw-wrap">
+        <input type="password" id="editPwInput" placeholder="كلمة المرور"
+          onkeydown="if(event.key==='Enter') confirmEditPassword()">
+      </div>
+      <div class="del-err" id="editPwErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeEditPwModal()">إلغاء</button>
+      <button class="btn-edit-save" onclick="confirmEditPassword()">تحقق والمتابعة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Form Modal ──────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="editFormModal" onclick="closeEditFormModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <span class="modal-title">✏️ تعديل التقرير</span>
+      <button class="modal-close" onclick="closeEditFormModal()">✕ إغلاق</button>
+    </div>
+    <div class="modal-body" id="editFormBody"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeEditFormModal()">إلغاء</button>
+      <button class="btn-edit-save" id="editSaveBtn" onclick="saveEdit()">حفظ التعديلات</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- end no-print -->
 
 <!-- Print view -->
@@ -300,6 +361,10 @@ let _allReports = [];
 let _pendingDeleteId   = null;
 let _pendingDeleteSup  = null;
 let _currentReport     = null;
+let _pendingEditId     = null;
+let _pendingEditSup    = null;
+let _editReport        = null;
+let _editEntries       = [];
 
 // ── Supabase ──────────────────────────────────────────────────────────────────
 async function sbGet(path){
@@ -312,6 +377,13 @@ async function sbDel(path){
   await fetch(`${SB_URL}/rest/v1/${path}`,{
     method:'DELETE',
     headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+  });
+}
+async function sbPatch(path, body){
+  await fetch(`${SB_URL}/rest/v1/${path}`,{
+    method:'PATCH',
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify(body)
   });
 }
 
@@ -455,6 +527,7 @@ function reportCard(r){
       </div>
       <div class="report-card-actions">
         <button class="act-btn act-view" onclick="viewReport('${r.id}')">👁 عرض</button>
+        ${canDelete?`<button class="act-btn act-edit" onclick="promptEdit('${r.id}','${escAttr(r.supervisor||'')}')">✏️ تعديل</button>`:''}
         ${canDelete?`<button class="act-btn act-del" onclick="promptDelete('${r.id}','${escAttr(r.supervisor||'')}')">🗑 حذف</button>`:''}
       </div>
     </div>`;
@@ -583,6 +656,173 @@ function closeDeleteModal(e){
   if(!e || e.target===document.getElementById('deleteModal')){
     document.getElementById('deleteModal').classList.remove('show');
     _pendingDeleteId = _pendingDeleteSup = null;
+  }
+}
+
+// ── Edit — password + form ────────────────────────────────────────────────────
+function promptEdit(id, supervisor){
+  _pendingEditId  = id;
+  _pendingEditSup = supervisor;
+  if(isAdmin){
+    openEditForm(id);
+    return;
+  }
+  document.getElementById('editPwSupName').textContent = supervisor;
+  document.getElementById('editPwInput').value = '';
+  document.getElementById('editPwErr').textContent = '';
+  document.getElementById('editPwModal').classList.add('show');
+  setTimeout(()=>document.getElementById('editPwInput').focus(), 200);
+}
+
+async function confirmEditPassword(){
+  const pw = document.getElementById('editPwInput').value.trim();
+  if(!pw){ document.getElementById('editPwErr').textContent = 'أدخل كلمة المرور'; return; }
+  document.getElementById('editPwErr').textContent = '⏳ جاري التحقق...';
+  try{
+    const list = await sbGet(`accounts?name=eq.${encodeURIComponent(_pendingEditSup)}&password=eq.${encodeURIComponent(pw)}&select=id`);
+    if(list && list.length > 0){
+      closeEditPwModal();
+      await openEditForm(_pendingEditId);
+    } else {
+      document.getElementById('editPwErr').textContent = '✕ كلمة المرور غير صحيحة';
+    }
+  }catch{ document.getElementById('editPwErr').textContent = 'خطأ في التحقق'; }
+}
+
+function closeEditPwModal(e){
+  if(!e || e.target===document.getElementById('editPwModal')){
+    document.getElementById('editPwModal').classList.remove('show');
+    _pendingEditId = _pendingEditSup = null;
+  }
+}
+
+async function openEditForm(id){
+  document.getElementById('editFormBody').innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
+  document.getElementById('editFormModal').classList.add('show');
+  try{
+    const [rArr, entries] = await Promise.all([
+      sbGet(`daily_reports?id=eq.${id}&select=*`),
+      sbGet(`report_entries?report_id=eq.${id}&select=*&order=sort_order`)
+    ]);
+    _editReport  = rArr[0];
+    _editEntries = entries;
+    if(!_editReport){ document.getElementById('editFormBody').innerHTML='<div class="empty-state">تعذر تحميل التقرير</div>'; return; }
+
+    const d = new Date(_editReport.report_date);
+    const pad = n => String(n).padStart(2,'0');
+    const localIso = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    const grouped = {};
+    entries.forEach(e=>{ (grouped[e.section]=grouped[e.section]||[]).push(e); });
+
+    let sectionsHtml = '';
+    Object.keys(grouped).forEach(secKey=>{
+      const items  = grouped[secKey];
+      const label  = SECTION_LABELS[secKey]||secKey;
+      const icon   = SECTION_ICONS[secKey]||'📌';
+      let rowsHtml = '';
+      items.forEach(e=>{ rowsHtml += renderEditEntry(e, secKey); });
+      sectionsHtml += `<div class="edit-section-block">
+        <div class="edit-section-title">${icon} ${label}</div>
+        ${rowsHtml}
+      </div>`;
+    });
+
+    document.getElementById('editFormBody').innerHTML = `
+      <div class="edit-field-group">
+        <label class="edit-field-lbl">وقت التقرير</label>
+        <input type="datetime-local" id="editDateTime" class="edit-input" value="${localIso}" style="max-width:260px">
+      </div>
+      <div class="edit-note">المشرف والفترة لا يمكن تعديلهما</div>
+      <hr style="border-color:var(--card-border);margin:8px 0 14px">
+      ${sectionsHtml||'<div class="empty-state" style="padding:20px 0">لا توجد أقسام</div>'}`;
+  }catch{
+    document.getElementById('editFormBody').innerHTML = '<div class="empty-state">خطأ في التحميل</div>';
+  }
+}
+
+function renderEditEntry(e, secKey){
+  let fields = '';
+  if(secKey==='reception'||secKey==='departure'){
+    fields = `
+      <div class="edit-entry-field">
+        <label class="edit-field-lbl">عدد الحجاج</label>
+        <input type="number" class="edit-input" data-id="${e.id}" data-field="pilgrim_count" value="${e.pilgrim_count??''}" style="max-width:140px">
+      </div>
+      <div class="edit-entry-field">
+        <label class="edit-field-lbl">ملاحظات</label>
+        <textarea class="edit-input edit-textarea" data-id="${e.id}" data-field="notes" rows="2">${e.notes||''}</textarea>
+      </div>`;
+  } else if(secKey==='presence'){
+    fields = `
+      <div class="edit-entry-field">
+        <label class="edit-field-lbl">متواجدون</label>
+        <select class="edit-input" data-id="${e.id}" data-field="has_notes" style="max-width:120px">
+          <option value="true" ${e.has_notes?'selected':''}>نعم</option>
+          <option value="false" ${!e.has_notes?'selected':''}>لا</option>
+        </select>
+      </div>
+      <div class="edit-entry-field">
+        <label class="edit-field-lbl">ملاحظة</label>
+        <textarea class="edit-input edit-textarea" data-id="${e.id}" data-field="notes" rows="2">${e.notes||''}</textarea>
+      </div>`;
+  } else if(secKey==='closed_centers'){
+    fields = `<div class="edit-field-lbl" style="font-style:italic">مغلق (لا يمكن تعديله)</div>`;
+  } else {
+    fields = `
+      <div class="edit-entry-field">
+        <label class="edit-field-lbl">ملاحظات</label>
+        <textarea class="edit-input edit-textarea" data-id="${e.id}" data-field="notes" rows="2">${e.notes||''}</textarea>
+      </div>`;
+  }
+  return `<div class="edit-entry-row">
+    <div class="edit-entry-center">${e.center||'—'}</div>
+    ${fields}
+  </div>`;
+}
+
+function closeEditFormModal(e){
+  if(!e || e.target===document.getElementById('editFormModal')){
+    document.getElementById('editFormModal').classList.remove('show');
+    _editReport = null;
+    _editEntries = [];
+  }
+}
+
+async function saveEdit(){
+  if(!_editReport) return;
+  const btn = document.getElementById('editSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الحفظ...';
+  try{
+    // 1. تحديث وقت التقرير
+    const dtVal = document.getElementById('editDateTime').value;
+    if(dtVal){
+      await sbPatch(`daily_reports?id=eq.${_editReport.id}`, {report_date: new Date(dtVal).toISOString()});
+    }
+
+    // 2. تحديث كل entry
+    const inputs = document.querySelectorAll('#editFormBody [data-id]');
+    const updates = {};
+    inputs.forEach(el=>{
+      const id    = el.dataset.id;
+      const field = el.dataset.field;
+      if(!updates[id]) updates[id] = {};
+      if(field==='has_notes')       updates[id][field] = el.value==='true';
+      else if(field==='pilgrim_count') updates[id][field] = el.value!=='' ? parseInt(el.value) : null;
+      else                           updates[id][field] = el.value||null;
+    });
+    await Promise.all(Object.entries(updates).map(([id, body])=>sbPatch(`report_entries?id=eq.${id}`, body)));
+
+    closeEditFormModal();
+    const {from,to,supervisor,rtype}=getCurrentFilters();
+    await loadReports(from||null,to||null,supervisor||null,rtype||null);
+    toast('✓ تم حفظ التعديلات','success');
+  }catch{
+    toast('خطأ في الحفظ','error');
+  }finally{
+    btn.disabled=false;
+    btn.textContent='حفظ التعديلات';
   }
 }
 
