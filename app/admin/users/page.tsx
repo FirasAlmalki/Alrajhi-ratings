@@ -85,7 +85,7 @@ export default function UsersPage() {
   return (
     <>
       <div className="page-header">
-        <div className="page-title">👥 إدارة المستخدمين</div>
+        <div className="page-title">إدارة المستخدمين</div>
         <div className="page-date">إضافة وإدارة صلاحيات الأقسام</div>
       </div>
       
