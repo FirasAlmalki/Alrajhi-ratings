@@ -45,16 +45,16 @@ export default function SettingsPage() {
   return (
     <>
       <div className="page-header">
-        <div className="page-title">⚙️ إعدادات مرحلة الجاهزية</div>
+        <div className="page-title">إعدادات مرحلة الجاهزية</div>
         <div className="page-date">روابط مصادر البيانات</div>
       </div>
       
       <div className="upload-card" style={{ borderColor: 'rgba(76,175,138,.3)' }}>
-        <div className="upload-title">🔗 روابط البيانات (Webhook)</div>
+        <div className="upload-title">روابط البيانات (Webhook)</div>
         <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {sections.map(s => (
             <div key={s.k}>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>{s.icon} {s.label}</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>{s.label}</div>
               <input 
                 value={(urls as any)[s.k]}
                 onChange={e => setUrls({ ...urls, [s.k]: e.target.value })}
@@ -64,24 +64,12 @@ export default function SettingsPage() {
             </div>
           ))}
           <div className="settings-actions-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
-            <button className="export-btn" onClick={handleSave}>💾 حفظ الروابط</button>
+            <button className="export-btn" onClick={handleSave}>حفظ الروابط</button>
             {saved && <span style={{ color: 'var(--green)', fontSize: '13px' }}>✓ تم الحفظ</span>}
           </div>
         </div>
       </div>
 
-      <div className="upload-card">
-        <div className="upload-title">🔄 مزامنة البيانات يدوياً</div>
-        <div className="upload-hint">استخدم هذا الزر لجلب أحدث البيانات من جوجل شيت</div>
-        <button 
-          className="do-export-btn" 
-          onClick={handleSync}
-          disabled={syncing}
-          style={{ width: 'auto', padding: '10px 20px' }}
-        >
-          {syncing ? '⏳ جاري التحميل...' : 'تحديث البيانات الآن'}
-        </button>
-      </div>
     </>
   );
 }
