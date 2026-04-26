@@ -29,6 +29,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className={tajawal.variable}>
+      <head>
+        {/* Avoid flash of wrong theme */}
+        <script dangerouslySetInnerHTML={{__html:`(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();`}} />
+      </head>
       <body>
         <AppProvider>
           <AppShell>{children}</AppShell>
