@@ -96,7 +96,7 @@ button,input,select,textarea{min-width:0;max-width:100%}
 </div>
 
 <div class="page-header">
-  <div class="header-logo">RA</div>
+
   <div class="header-text">
     <h1>وصول رحلات باكستان إلى مكة المكرمة</h1>
     <p>بيانات فعلية من جدول الرحلات الرسمي — موسم ١٤٤٧</p>
@@ -108,11 +108,8 @@ button,input,select,textarea{min-width:0;max-width:100%}
 </div>
 
 <div class="kpi-strip">
-  <div class="kpi"><div class="kpi-val" id="kpi-total">—</div><div class="kpi-lbl">إجمالي الحجاج</div></div>
   <div class="kpi"><div class="kpi-val" id="kpi-peak-date">—</div><div class="kpi-lbl">يوم الذروة</div></div>
   <div class="kpi"><div class="kpi-val" id="kpi-peak-count">—</div><div class="kpi-lbl">حجاج يوم الذروة</div></div>
-  <div class="kpi"><div class="kpi-val" id="kpi-days">—</div><div class="kpi-lbl">أيام نشطة</div></div>
-  <div class="kpi"><div class="kpi-val" id="kpi-avg">—</div><div class="kpi-lbl">متوسط يومي</div></div>
 </div>
 
 <div class="legend">
@@ -132,10 +129,7 @@ const HIJRI_DAY = {"2026-04-26":"2 ذو القعدة 1447","2026-04-27":"3 ذو 
 const META={total:95347,peak_iso:"2026-05-11",peak_count:15154,active_days:23,avg_daily:4146};
 function fmt(n){return Number(n).toLocaleString('en-US');}
 document.getElementById('hdr-total').textContent=fmt(META.total);
-document.getElementById('kpi-total').textContent=fmt(META.total);
 document.getElementById('kpi-peak-count').textContent=fmt(META.peak_count);
-document.getElementById('kpi-days').textContent=META.active_days;
-document.getElementById('kpi-avg').textContent=fmt(META.avg_daily);
 (function(){
   const d=new Date(META.peak_iso+'T00:00:00');
   const g=d.toLocaleDateString('ar-SA-u-ca-gregory',{day:'numeric',month:'long'});
