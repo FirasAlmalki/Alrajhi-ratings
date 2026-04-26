@@ -13,6 +13,10 @@ const tajawal = Tajawal({
 export const metadata: Metadata = {
   title: "جاهزية المشاعر المقدسة — الراجحي",
   description: "نظام التقييم والجاهزية",
+  icons: {
+    icon: '/Alrajhi.png',
+    apple: '/Alrajhi.png',
+  },
 };
 
 export const viewport = {
