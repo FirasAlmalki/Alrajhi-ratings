@@ -57,7 +57,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <span className="app-footer-sep">·</span>
         <span>إدارة الامتثال والالتزام</span>
         <span className="app-footer-sep">·</span>
-        <span>موسم الحج 1446</span>
+        <span>موسم الحج 1447</span>
       </footer>
     </div>
   );
