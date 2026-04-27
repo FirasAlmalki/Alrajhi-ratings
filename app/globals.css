@@ -35,6 +35,8 @@ button,input,select,textarea{min-width:0;max-width:100%;}
 /* ── App ── */
 .app{display:none;min-height:100vh;flex-direction:column;}
 .app.visible{display:flex;}
+.app-footer{text-align:center;padding:14px 16px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--card-border);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+.app-footer-sep{color:var(--gold);opacity:.5;}
 
 /* ── Header ── */
 .header{background:var(--deep-navy);border-bottom:2px solid var(--gold);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:8px;}

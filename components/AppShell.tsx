@@ -52,6 +52,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <div className="main" id="main">
         {children}
       </div>
+      <footer className="app-footer">
+        <span>الراجحي للخدمات المساندة</span>
+        <span className="app-footer-sep">·</span>
+        <span>إدارة الامتثال والالتزام</span>
+        <span className="app-footer-sep">·</span>
+        <span>موسم الحج 1446</span>
+      </footer>
     </div>
   );
 }
