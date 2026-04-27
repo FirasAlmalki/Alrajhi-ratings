@@ -29,3 +29,5 @@ export const sbGetAccounts = () => sbReq('accounts?select=*&order=created_at.asc
 export const sbAddAccount = (n: string, pw: string, perms: any) => sbReq('accounts', { method:'POST', prefer:'return=minimal', body:{ name:n, password:pw, permissions:perms } });
 export const sbUpdatePerms = (id: string | number, perms: any) => sbReq(`accounts?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ permissions:perms } });
 export const sbDeleteAccount = (id: string | number) => sbReq(`accounts?id=eq.${id}`, { method:'DELETE' });
+export const sbVerifyAccount = (name: string, pw: string) => sbReq(`accounts?name=eq.${encodeURIComponent(name)}&password=eq.${encodeURIComponent(pw)}&select=id`);
+export const sbUpdateAccount = (id: string | number, fields: { name?: string; password?: string }) => sbReq(`accounts?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: fields });

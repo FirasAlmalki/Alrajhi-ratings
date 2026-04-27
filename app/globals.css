@@ -53,6 +53,25 @@ button,input,select,textarea{min-width:0;max-width:100%;}
 .header-user-menu{position:absolute;left:0;top:calc(100% + 8px);background:var(--deep-navy);border:1px solid var(--card-border);border-radius:10px;min-width:150px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:500;overflow:hidden;}
 .header-user-menu button{width:100%;background:none;border:none;padding:11px 16px;color:var(--red);font-family:var(--font-tajawal),sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-align:right;transition:background .15s;}
 .header-user-menu button:hover{background:rgba(192,57,43,.12);}
+.header-user-menu .edit-account-btn{color:var(--gold);}
+.header-user-menu .edit-account-btn:hover{background:rgba(201,168,76,.1);}
+/* Account edit modal */
+.acct-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px;}
+.acct-modal{background:var(--deep-navy);border:1px solid var(--card-border);border-radius:14px;width:100%;max-width:400px;overflow:hidden;}
+.acct-modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--card-border);}
+.acct-modal-title{font-size:0.95rem;font-weight:700;color:var(--gold);}
+.acct-modal-close{background:rgba(255,255,255,.07);border:1px solid var(--card-border);border-radius:6px;color:var(--text-muted);padding:4px 10px;cursor:pointer;font-family:var(--font-tajawal),sans-serif;font-size:0.8rem;}
+.acct-modal-body{padding:18px;}
+.acct-field{margin-bottom:14px;}
+.acct-field label{display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;}
+.acct-input{width:100%;background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;padding:9px 12px;color:var(--text-light);font-family:var(--font-tajawal),sans-serif;font-size:0.88rem;outline:none;}
+.acct-input:focus{border-color:var(--gold);}
+.acct-err{font-size:0.78rem;color:var(--red);min-height:18px;margin-bottom:8px;}
+.acct-modal-footer{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--card-border);}
+.acct-save-btn{flex:1;padding:9px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);border-radius:8px;color:var(--gold);font-family:var(--font-tajawal),sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;}
+.acct-save-btn:hover{background:rgba(201,168,76,.28);}
+.acct-cancel-btn{flex:1;padding:9px;background:rgba(255,255,255,.05);border:1px solid var(--card-border);border-radius:8px;color:var(--text-muted);font-family:var(--font-tajawal),sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;}
+.acct-cancel-btn:hover{border-color:var(--gold);color:var(--gold);}
 
 /* ── Sidebar ── */
 .sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;}
