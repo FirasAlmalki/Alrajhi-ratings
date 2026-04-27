@@ -681,8 +681,9 @@ async function confirmEditPassword(){
   try{
     const list = await sbGet(`accounts?name=eq.${encodeURIComponent(_pendingEditSup)}&password=eq.${encodeURIComponent(pw)}&select=id`);
     if(list && list.length > 0){
+      const idToEdit = _pendingEditId;
       closeEditPwModal();
-      await openEditForm(_pendingEditId);
+      await openEditForm(idToEdit);
     } else {
       document.getElementById('editPwErr').textContent = '✕ كلمة المرور غير صحيحة';
     }
