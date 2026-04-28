@@ -740,8 +740,8 @@ function openModal(cell) {
           ${hasInfo ? '<span class="grp-arrow">▼</span>' : ''}
         </div>
         <div class="grp-header-meta">
-          ${h.center ? `<span class="grp-meta-chip">🏠 مركز ${h.center}</span>` : ''}
-          ${h.pilgrims ? `<span class="grp-meta-chip">👥 ${h.pilgrims.toLocaleString('en-US')} حاج</span>` : ''}
+          ${h.center ? `<span class="grp-meta-chip">مركز ${h.center}</span>` : ''}
+          ${h.pilgrims ? `<span class="grp-meta-chip">${h.pilgrims.toLocaleString('en-US')} حاج</span>` : ''}
         </div>
       </div>
       ${hasInfo ? `<div class="grp-body">
