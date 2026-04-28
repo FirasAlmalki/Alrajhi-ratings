@@ -503,9 +503,17 @@ async function initData(){
       if(g('status') !== '\u062a\u0645 \u0627\u0644\u0627\u0639\u062a\u0645\u0627\u062f') continue;
       const city = CITY_MAP[g('city')]; if(!city) continue;
       const mode = MODE_MAP[g('mode')]; if(!mode) continue;
-      const dr   = g('date_m'); if(!dr||!dr.includes('/')) continue;
-      const p    = dr.split('/'); if(p.length<3) continue;
-      const iso  = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+      const dr = g('date_m'); if(!dr) continue;
+      let iso;
+      if(dr.includes('/')){
+        const p = dr.split('/'); if(p.length<3) continue;
+        iso = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+      } else {
+        const MONTHS={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+        const p = dr.trim().split(' '); if(p.length<3) continue;
+        const mm = MONTHS[p[1]]; if(!mm) continue;
+        iso = `${p[2]}-${mm}-${p[0].padStart(2,'0')}`;
+      }
       if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue;
       const hijriRaw = g('date_h');
       if(hijriRaw && !HIJRI[iso]) HIJRI[iso] = hijriRaw;
