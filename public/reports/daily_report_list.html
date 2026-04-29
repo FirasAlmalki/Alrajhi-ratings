@@ -891,9 +891,10 @@ async function doExportDay(){
       dataRows.push(row);
     }
   });
-  // ترتيب: التاريخ ← الموقع (مكة←المشاعر←المدينة) ← الفترة ← القسم ← المركز/الإدارة
+  // ترتيب: التاريخ (يوم فقط) ← الموقع (مكة←المشاعر←المدينة) ← الفترة ← القسم ← المركز/الإدارة
+  function dateStrToISO(s){ const p=s.split('/'); return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:s; }
   dataRows.sort((a,b)=>{
-    const dateCmp = new Date(a._date) - new Date(b._date);
+    const dateCmp = dateStrToISO(a[0]).localeCompare(dateStrToISO(b[0]));
     if(dateCmp!==0) return dateCmp;
     const lCmp = locationRank(a[1]) - locationRank(b[1]);
     if(lCmp!==0) return lCmp;
