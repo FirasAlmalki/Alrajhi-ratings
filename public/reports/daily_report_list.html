@@ -22,9 +22,11 @@ button,input,select,textarea{min-width:0;max-width:100%;}
 .page-hdr{background:var(--deep-navy);border-bottom:2px solid var(--gold);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
 .page-hdr-title{font-size:1rem;font-weight:700;color:var(--gold);}
 .page-hdr-user{font-size:0.78rem;color:var(--text-muted);}
+.hdr-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .export-day-btn{padding:7px 14px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;border:none;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);color:var(--gold);transition:background .15s;}
 .export-day-btn:hover{background:rgba(201,168,76,.28);}
 .export-day-btn:disabled{opacity:.55;cursor:not-allowed;}
+.status-body{white-space:pre-wrap;line-height:1.9;font-size:0.9rem;color:var(--text-light);background:rgba(255,255,255,.03);border:1px solid var(--card-border);border-radius:10px;padding:14px;direction:rtl;}
 
 
 
@@ -137,6 +139,7 @@ button,input,select,textarea{min-width:0;max-width:100%;}
 
 @media(max-width:620px){
   .page-hdr{padding:10px 14px;gap:10px;align-items:flex-start;}
+  .hdr-actions{width:100%;justify-content:stretch;}
   .export-day-btn{padding:8px 10px;font-size:.74rem;}
   .main{padding:14px 12px;}
   .filter-bar{display:grid;grid-template-columns:1fr 1fr;padding:12px;gap:8px;}
@@ -189,7 +192,10 @@ button,input,select,textarea{min-width:0;max-width:100%;}
     <div class="page-hdr-title">سجل التقارير</div>
     <div class="page-hdr-user" id="userLabel"></div>
   </div>
-  <button class="export-day-btn" id="exportCurrentBtn" onclick="doExportDay()">📤 تصدير النتائج</button>
+  <div class="hdr-actions">
+    <button class="export-day-btn" id="statusCurrentBtn" onclick="showDailyStatus()">حالة الأيام</button>
+    <button class="export-day-btn" id="exportCurrentBtn" onclick="doExportDay()">📤 تصدير النتائج</button>
+  </div>
 </div>
 
 <div class="main">
@@ -306,6 +312,22 @@ button,input,select,textarea{min-width:0;max-width:100%;}
   </div>
 </div>
 
+<!-- ── Daily Status Modal ───────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="statusModal" onclick="closeStatusModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:560px;max-height:90vh">
+    <div class="modal-hdr">
+      <span class="modal-title">حالة التقارير حسب اليوم</span>
+      <button class="modal-close" onclick="closeStatusModal()">✕ إغلاق</button>
+    </div>
+    <div class="modal-body">
+      <div class="status-body" id="statusBody"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="copyDailyStatus()">نسخ النص</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- end no-print -->
 
 <!-- Print view -->
@@ -335,9 +357,9 @@ const SUPERVISORS_META = [
   {name:'رامي الغامدي',        period:'المشاعر',    location:'عرفة',            zone:'mashair'},
   {name:'رامي الغامدي',        period:'المشاعر',    location:'منى',             zone:'mashair'},
   {name:'رامي الغامدي',        period:'المشاعر',    location:'مزدلفة',          zone:'mashair'},
-  {name:'عبدالمجيد الخطيري',  period:'فترة أولى',  location:'المدينة المنورة', zone:'madinah'},
+  {name:'وراد سمان',           period:'فترة أولى',  location:'المدينة المنورة', zone:'madinah'},
   {name:'وراد سمان',           period:'فترة ثانية', location:'المدينة المنورة', zone:'madinah'},
-  {name:'فترة ثالث',           period:'فترة ثالثة', location:'المدينة المنورة', zone:'madinah'},
+  {name:'عبدالمجيد الخطيري',  period:'فترة ثالثة', location:'المدينة المنورة', zone:'madinah'},
 ];
 
 // الترتيب المعتمد للمواقع والفترات
@@ -544,6 +566,143 @@ function clearFilter(){
   ['fFrom','fTo','fType'].forEach(id=>{ document.getElementById(id).value=''; });
   if(isAdmin||isManager) document.getElementById('fSupervisor').value='';
   loadReports();
+}
+
+// ── Daily status ──────────────────────────────────────────────────────────────
+const STATUS_GROUPS = [
+  {label:'مكة', zone:'makkah'},
+  {label:'المشاعر', zone:'mashair'},
+  {label:'المدينة', zone:'madinah'},
+];
+const STATUS_DAY_NAMES = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+let _lastStatusText = '';
+
+function dateKeyFromDate(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function dateKeyFromReport(r){
+  return dateKeyFromDate(new Date(r.report_date));
+}
+function parseDateInput(value){
+  if(!value) return null;
+  const [y,m,d] = value.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function enumerateDateKeys(fromKey, toKey){
+  const start = parseDateInput(fromKey);
+  const end = parseDateInput(toKey);
+  if(!start||!end||start>end) return [];
+  const keys = [];
+  for(const d = new Date(start); d<=end; d.setDate(d.getDate()+1)){
+    keys.push(dateKeyFromDate(d));
+  }
+  return keys;
+}
+function statusDateLabel(key){
+  const d = parseDateInput(key);
+  return `يوم ${STATUS_DAY_NAMES[d.getDay()]} ${d.getMonth()+1}/${d.getDate()}`;
+}
+function supervisorShortName(name){
+  const s = String(name||'').trim();
+  if(s.startsWith('وراد')) return 'وراد';
+  if(s.startsWith('عبدالمجيد')) return 'عبدالمجيد';
+  if(s.startsWith('خالد')) return 'خالد عليوة';
+  if(s.startsWith('رامي')) return 'رامي';
+  if(s.startsWith('يوسف')) return 'يوسف';
+  if(s.startsWith('فايز')) return 'فايز';
+  return s.split(/\s+/).slice(0,2).join(' ');
+}
+function expectedForZone(zone){
+  const seen = new Set();
+  return SUPERVISORS_META
+    .filter(s=>s.zone===zone)
+    .filter(s=>{
+      const key = `${s.period}|${s.name}`;
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a,b)=>periodRank(a.period)-periodRank(b.period));
+}
+function reportZone(report){
+  if(report.location==='مكة المكرمة') return 'makkah';
+  if(['عرفة','منى','مزدلفة'].includes(report.location)) return 'mashair';
+  if(report.location==='المدينة المنورة') return 'madinah';
+  return '';
+}
+function reportMatchesExpected(report, expected){
+  if(reportZone(report)!==expected.zone) return false;
+  return periodRank(report.period)===periodRank(expected.period);
+}
+function resolveStatusDateRange(reports, from, to){
+  const keys = reports.map(dateKeyFromReport).sort();
+  if(!keys.length && (!from||!to)) return null;
+  return {from: from || keys[0], to: to || keys[keys.length-1]};
+}
+function buildDailyStatusText(reports, from, to){
+  const dailyReports = reports.filter(r=>r.report_type==='daily');
+  const range = resolveStatusDateRange(dailyReports, from, to);
+  if(!range) return '';
+  const dateKeys = enumerateDateKeys(range.from, range.to);
+  const byDate = {};
+  dailyReports.forEach(r=>{
+    const key = dateKeyFromReport(r);
+    (byDate[key]=byDate[key]||[]).push(r);
+  });
+
+  return dateKeys.map(dayKey=>{
+    const dayReports = byDate[dayKey]||[];
+    const groupLines = STATUS_GROUPS.map(group=>{
+      const expected = expectedForZone(group.zone);
+      const missing = expected.filter(exp=>!dayReports.some(r=>reportMatchesExpected(r, exp)));
+      if(!missing.length) return `${group.label}✅`;
+      return `${group.label}:\n${missing.map(s=>`${s.period} (${supervisorShortName(s.name)})`).join('\n')}`;
+    });
+    return `${statusDateLabel(dayKey)}\n${groupLines.join('\n\n')}`;
+  }).join('\n\n\n');
+}
+async function showDailyStatus(){
+  const {from, to} = getCurrentFilters();
+  const btn = document.getElementById('statusCurrentBtn');
+  const oldLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'جاري التجهيز...';
+  try{
+    const range = resolveStatusDateRange(_allReports.filter(r=>r.report_type==='daily'), from, to);
+    if(!range){
+      toast('لا توجد تقارير يومية لبناء الحالة','error');
+      return;
+    }
+    const reports = await fetchReports(range.from, range.to, '', 'daily');
+    _lastStatusText = buildDailyStatusText(reports, range.from, range.to);
+    if(!_lastStatusText){
+      toast('لا توجد تقارير يومية لبناء الحالة','error');
+      return;
+    }
+    document.getElementById('statusBody').textContent = _lastStatusText;
+    document.getElementById('statusModal').classList.add('show');
+  }catch(e){
+    toast('خطأ في تجهيز حالة الأيام','error');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = oldLabel;
+  }
+}
+function closeStatusModal(e){
+  if(e && e.target.id!=='statusModal') return;
+  document.getElementById('statusModal').classList.remove('show');
+}
+async function copyDailyStatus(){
+  if(!_lastStatusText) return;
+  try{
+    await navigator.clipboard.writeText(_lastStatusText);
+    toast('تم نسخ الحالة','success');
+  }catch{
+    toast('تعذر نسخ النص','error');
+  }
 }
 
 // ── View report ───────────────────────────────────────────────────────────────
