@@ -117,6 +117,7 @@ button,input,select,textarea{min-width:0;max-width:100%;}
 .edit-field-lbl{font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;display:block;}
 .edit-input{width:100%;background:var(--deep-navy);border:1px solid var(--card-border);border-radius:8px;padding:8px 12px;color:var(--text-light);font-family:'Tajawal',sans-serif;font-size:0.85rem;outline:none;}
 .edit-input:focus{border-color:var(--gold);}
+.edit-input.invalid{border-color:var(--red);}
 .edit-textarea{resize:vertical;min-height:54px;}
 .edit-section-block{margin-bottom:16px;}
 .edit-section-title{font-size:0.82rem;font-weight:700;color:var(--gold);background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.15);border-radius:8px 8px 0 0;padding:7px 12px;margin-bottom:6px;}
@@ -576,8 +577,8 @@ async function viewReport(id){
         thead='<th>#</th><th>الإدارة</th><th>ملاحظات</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
       } else if(secKey==='reception'||secKey==='departure'){
-        thead='<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>الجنسية</th><th>ملاحظات</th>';
-        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.pilgrim_count??'—'}</td><td>${e.nationality||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
+        thead='<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.pilgrim_count??'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
       } else if(secKey==='presence'){
         thead='<th>#</th><th>المركز / الإدارة</th><th>متواجدون</th><th>ملاحظات</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.has_madar_report?(e.notes||'نعم'):'لا'}</td></tr>`).join('');
@@ -747,8 +748,8 @@ function renderEditEntry(e, secKey){
   if(secKey==='reception'||secKey==='departure'){
     fields = `
       <div class="edit-entry-field">
-        <label class="edit-field-lbl">عدد الحجاج</label>
-        <input type="number" class="edit-input" data-id="${e.id}" data-field="pilgrim_count" value="${e.pilgrim_count??''}" style="max-width:140px">
+        <label class="edit-field-lbl">عدد الحجاج *</label>
+        <input type="number" required class="edit-input" data-id="${e.id}" data-field="pilgrim_count" value="${e.pilgrim_count??''}" style="max-width:140px">
       </div>
       <div class="edit-entry-field">
         <label class="edit-field-lbl">ملاحظات</label>
@@ -792,6 +793,17 @@ function closeEditFormModal(e){
 
 async function saveEdit(){
   if(!_editReport) return;
+  const pilgrimInputs = document.querySelectorAll('#editFormBody [data-field="pilgrim_count"]');
+  for(const input of pilgrimInputs){
+    input.classList.remove('invalid');
+    if(String(input.value??'').trim()===''){
+      input.classList.add('invalid');
+      input.focus();
+      input.scrollIntoView({behavior:'smooth',block:'center'});
+      toast('عدد الحجاج إلزامي في الاستقبال والمغادرة','error');
+      return;
+    }
+  }
   const btn = document.getElementById('editSaveBtn');
   btn.disabled = true;
   btn.textContent = '⏳ جاري الحفظ...';
@@ -1087,8 +1099,8 @@ function buildDayPrint(reports, entriesByReport, date){
         thead='<th>#</th><th>الإدارة</th><th>ملاحظات</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
       } else if(secKey==='reception'||secKey==='departure'){
-        thead='<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>الجنسية</th><th>ملاحظات</th>';
-        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.pilgrim_count??'—'}</td><td>${e.nationality||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
+        thead='<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>ملاحظات</th>';
+        rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.pilgrim_count??'—'}</td><td>${e.has_notes?'نعم':'لا'}</td></tr>`).join('');
       } else if(secKey==='presence'){
         thead='<th>#</th><th>المركز / الإدارة</th><th>متواجدون</th><th>ملاحظات</th>';
         rows=items.map((e,i)=>`<tr><td>${i+1}</td><td>${e.center||'—'}</td><td>${e.has_notes?'نعم':'لا'}</td><td>${e.has_madar_report?(e.notes||'نعم'):'لا'}</td></tr>`).join('');

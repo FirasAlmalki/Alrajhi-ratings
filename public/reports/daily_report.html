@@ -31,6 +31,7 @@ button,input,select,textarea{min-width:0;max-width:100%;}
 .form-label{font-size:0.75rem;color:var(--text-muted);font-weight:600;}
 .form-control{background:var(--deep-navy);border:1px solid var(--card-border);border-radius:8px;padding:8px 11px;color:var(--text-light);font-family:'Tajawal',sans-serif;font-size:0.87rem;outline:none;direction:rtl;width:100%;}
 .form-control:focus{border-color:var(--gold);}
+.form-control.invalid{border-color:var(--red);}
 .form-control:disabled{opacity:.55;cursor:not-allowed;}
 textarea.form-control{resize:vertical;min-height:56px;}
 .period-display{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:8px 11px;color:var(--gold);font-weight:700;font-size:0.9rem;min-height:36px;display:flex;align-items:center;}
@@ -467,7 +468,6 @@ function renderDailyTemplate(){
           <div class="csel-box-hdr">
             <span class="csel-box-title">📍 اختر المراكز</span>
             <span class="csel-badge" id="dcbadge_${sec.key}">0</span>
-            <button class="csel-btn" onclick="dSelectAll('${sec.key}')">تحديد الكل</button>
             <button class="csel-btn" onclick="dClearAll('${sec.key}')">إلغاء الكل</button>
           </div>
           <div class="filter-checklist" id="dclist_${sec.key}"></div>
@@ -510,7 +510,7 @@ function renderDailyCenterSel(key){
 
 function _newEntry(key, center){
   const base = {center, hasNotes:false, notes:''};
-  if(key==='reception'||key==='departure') Object.assign(base,{pilgrimCount:'',nationality:''});
+  if(key==='reception'||key==='departure') Object.assign(base,{pilgrimCount:''});
   return base;
 }
 function dToggleCenter(key, center, checked){
@@ -557,16 +557,10 @@ function renderDailyEntries(key){
         ${isPilgrim?`
         <div class="form-row" style="margin-bottom:10px">
           <div class="form-group">
-            <div class="form-label">عدد الحجاج</div>
-            <input type="number" min="0" class="form-control" placeholder="0"
+            <div class="form-label">عدد الحجاج *</div>
+            <input type="number" min="0" required class="form-control" id="dpc_${key}_${i}" placeholder="0"
               value="${e.pilgrimCount||''}"
               oninput="dSetField('${key}',${i},'pilgrimCount',this.value)">
-          </div>
-          <div class="form-group">
-            <div class="form-label">الجنسية</div>
-            <input type="text" class="form-control" placeholder="مثال: مصري"
-              value="${e.nationality||''}"
-              oninput="dSetField('${key}',${i},'nationality',this.value)">
           </div>
         </div>`:''}
         <div class="form-label" style="margin-bottom:4px">هل توجد ملاحظات؟</div>
@@ -591,6 +585,28 @@ function dSetHasNotes(key,idx,val){
 }
 function dSetField(key,idx,field,val){
   if(S.daily[key]?.[idx]) S.daily[key][idx][field]=val;
+  if(field==='pilgrimCount'){
+    document.getElementById(`dpc_${key}_${idx}`)?.classList.remove('invalid');
+  }
+}
+
+function validateDailyPilgrimCounts(){
+  if(S.reportType!=='daily') return true;
+  const sections = DAILY_SECTIONS.filter(sec=>sec.key==='reception'||sec.key==='departure');
+  for(const sec of sections){
+    const entries = S.daily[sec.key]||[];
+    for(let i=0;i<entries.length;i++){
+      if(String(entries[i].pilgrimCount??'').trim()===''){
+        const input = document.getElementById(`dpc_${sec.key}_${i}`);
+        input?.classList.add('invalid');
+        input?.focus();
+        input?.scrollIntoView({behavior:'smooth',block:'center'});
+        toast('عدد الحجاج إلزامي في الاستقبال والمغادرة','error');
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 // ── Presence template ─────────────────────────────────────────────────────────
@@ -662,6 +678,7 @@ function pSetField(idx,field,val){ if(S.presence[idx]) S.presence[idx][field]=va
 async function saveReport(){
   if(!S.location||!S.supervisor||!S.period){ toast('اختر الموقع والمشرف والفترة أولاً','error'); return; }
   if(!S.reportType){ toast('اختر نوع التقرير','error'); return; }
+  if(!validateDailyPilgrimCounts()) return;
   const btn=document.getElementById('btnSave');
   btn.disabled=true; btn.textContent='⏳ جاري الحفظ...';
   try{
@@ -682,7 +699,6 @@ async function saveReport(){
             report_id:reportId, section:sec.key, center:e.center,
             has_notes:e.hasNotes||false, notes:e.notes||null,
             pilgrim_count: isPilgrim && e.pilgrimCount!=='' ? Number(e.pilgrimCount)||null : null,
-            nationality:   isPilgrim ? (e.nationality||null) : null,
             action_taken:null, result:null, sort_order:i
           });
         });
@@ -731,11 +747,11 @@ function exportPDF(){
       if(!entries.length) return;
       const isPilgrim = sec.key==='reception'||sec.key==='departure';
       const thead = isPilgrim
-        ? '<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>الجنسية</th><th>الملاحظات</th>'
+        ? '<th>#</th><th>المركز</th><th>عدد الحجاج</th><th>الملاحظات</th>'
         : '<th>#</th><th>المركز</th><th>الملاحظات</th>';
       const rows = entries.map((e,i)=> isPilgrim ? `<tr>
         <td>${i+1}</td><td>${e.center||'—'}</td>
-        <td>${e.pilgrimCount||'—'}</td><td>${e.nationality||'—'}</td>
+        <td>${e.pilgrimCount||'—'}</td>
         <td>${e.hasNotes?(e.notes||'نعم'):'لا'}</td>
       </tr>` : `<tr>
         <td>${i+1}</td><td>${e.center||'—'}</td>
