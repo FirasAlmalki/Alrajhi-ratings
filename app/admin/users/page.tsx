@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '../../../context/AppContext';
 import { sbGetAccounts, sbAddAccount, sbUpdatePerms, sbDeleteAccount, sbUpdateAccount } from '../../../lib/supabase';
-import { PHASES, REPORTS } from '../../../lib/config';
+import { PHASES, REPORTS, MADAR } from '../../../lib/config';
 
 export default function UsersPage() {
   const router = useRouter();
@@ -158,6 +158,19 @@ export default function UsersPage() {
                     <input type="checkbox" checked={!!(acc.permissions?.view_all_reports)} onChange={e => togglePerm(acc.id, 'view_all_reports', e.target.checked)} style={{ accentColor:'var(--gold)' }} />
                     صلاحية مدير (رؤية الكل)
                   </label>
+                </div>
+
+                <div style={{ fontSize:'11px', color:'var(--text-muted)', marginBottom:'6px', paddingTop:'8px', borderTop:'1px solid var(--card-border)' }}>صلاحيات مدار:</div>
+                <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+                  {MADAR.map(r => {
+                    const checked = !!(acc.permissions && acc.permissions['report_' + r.key]);
+                    return (
+                      <label key={r.key} style={{ display:'flex', alignItems:'center', gap:'4px', background:'var(--deep-navy)', padding:'4px 10px', borderRadius:'6px', fontSize:'12px', border:'1px solid var(--card-border)' }}>
+                        <input type="checkbox" checked={checked} onChange={e => togglePerm(acc.id, 'report_' + r.key, e.target.checked)} style={{ accentColor:'var(--gold)' }} />
+                        {r.label}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             ))
