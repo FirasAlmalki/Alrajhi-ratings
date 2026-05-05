@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '../context/AppContext';
-import { PHASES, REPORTS } from '../lib/config';
+import { PHASES, REPORTS, MADAR } from '../lib/config';
 
 export default function HomePage() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export default function HomePage() {
 
   const visibleReports = REPORTS.filter(r => isAdmin || permissions['report_' + r.key]);
   const visiblePhases = PHASES.filter(ph => isAdmin || permissions[ph.key]);
+  const visibleMadar = MADAR.filter(r => isAdmin || permissions['report_' + r.key]);
 
   return (
     <>
@@ -28,6 +29,26 @@ export default function HomePage() {
           </div>
           <div className="home-phases-grid">
             {visibleReports.map(r => (
+              <div key={r.key} className="home-phase-card" onClick={() => router.push(`/reports/${r.key}`)}>
+                <div className="home-phase-icon">{r.icon}</div>
+                <div className="home-phase-label" style={{ fontSize: '16px' }}>{r.label}</div>
+                <div className="home-phase-desc">{r.desc}</div>
+                <div className="home-phase-arrow">←</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {visibleMadar.length > 0 && (
+        <>
+          <div className="phases-divider">
+            <div className="phases-divider-line"></div>
+            <span className="phases-divider-lbl">مدار</span>
+            <div className="phases-divider-line"></div>
+          </div>
+          <div className="home-phases-grid">
+            {visibleMadar.map(r => (
               <div key={r.key} className="home-phase-card" onClick={() => router.push(`/reports/${r.key}`)}>
                 <div className="home-phase-icon">{r.icon}</div>
                 <div className="home-phase-label" style={{ fontSize: '16px' }}>{r.label}</div>

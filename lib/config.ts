@@ -58,7 +58,10 @@ export const REPORTS: Report[] = [
     desc:  'تقويم وصول حجاج باكستان إلى مكة المكرمة',
     icon:  '✈️',
     file:  '/reports/pakistan_flights.html'
-  },
+  }
+];
+
+export const MADAR: Report[] = [
   {
     key:   'madar_reports',
     label: 'المحاضر',

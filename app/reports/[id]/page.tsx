@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useApp } from '../../../context/AppContext';
-import { REPORTS } from '../../../lib/config';
+import { REPORTS, MADAR } from '../../../lib/config';
 
 export default function ReportFramePage() {
   const { id } = useParams();
@@ -13,7 +13,7 @@ export default function ReportFramePage() {
   const [iframeSrc, setIframeSrc] = useState('');
 
   useEffect(() => {
-    const report = REPORTS.find(r => r.key === reportKey);
+    const report = [...REPORTS, ...MADAR].find(r => r.key === reportKey);
     if (!report) {
       router.push('/reports');
       return;
