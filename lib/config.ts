@@ -75,7 +75,7 @@ export const WEBHOOK_DEFAULTS: Record<string, string> = {
   madar:   ''
 };
 
-export const WEBHOOK_NAMES: Record<string, string> = { arafa:'عرفة', mina:'منى', masaken:'المساكن', madar:'مدار' };
+export const WEBHOOK_NAMES: Record<string, string> = { arafa:'عرفة', mina:'منى', masaken:'المساكن', madar:'محاضر' };
 export const WH_KEY = 'rj_webhook_urls';
 
 export function getWebhookUrl(cat: string): string {

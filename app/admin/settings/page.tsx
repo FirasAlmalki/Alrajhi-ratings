@@ -41,7 +41,7 @@ export default function SettingsPage() {
     { k: 'arafa', label: 'عرفة', icon: '🕌' },
     { k: 'mina', label: 'منى', icon: '⛺' },
     { k: 'masaken', label: 'المساكن', icon: '🏨' },
-    { k: 'madar', label: 'مدار', icon: '📄' }
+    { k: 'madar', label: 'محاضر', icon: '📄' }
   ];
 
   return (
