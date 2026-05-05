@@ -15,6 +15,7 @@ export default function Sidebar({ isOpen, onClose, currentPage }: SidebarProps) 
   const router = useRouter();
   const { role, permissions, logout } = useApp();
   const [phaseCollapsed, setPhaseCollapsed] = useState(false);
+  const [madarCollapsed, setMadarCollapsed] = useState(false);
 
   const isAdmin = role === 'admin';
 
@@ -92,6 +93,27 @@ export default function Sidebar({ isOpen, onClose, currentPage }: SidebarProps) 
             })}
           </div>
         </div>
+
+        {/* مدار */}
+        {(isAdmin || permissions['report_madar_reports']) && (
+          <>
+            <div className="sidebar-divider"></div>
+            <div className="sidebar-section">
+              <div className="sidebar-phase-header" onClick={() => setMadarCollapsed(!madarCollapsed)}>
+                <span className="sidebar-phase-label">مدار</span>
+                <span className={`phase-arrow ${madarCollapsed ? 'collapsed' : ''}`}>▼</span>
+              </div>
+              <div className={`phase-items ${madarCollapsed ? 'collapsed' : ''}`} style={madarCollapsed ? { maxHeight: 0 } : { maxHeight: '500px' }}>
+                <button
+                  className={`sidebar-item sub ${currentPage === 'madar_reports' ? 'active' : ''}`}
+                  onClick={() => navigate('/reports/madar_reports')}
+                >
+                  المحاضر
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="sidebar-logout">
           <button className="logout-btn" onClick={handleLogout}>تسجيل الخروج</button>

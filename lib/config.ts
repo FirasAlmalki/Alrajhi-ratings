@@ -2,7 +2,7 @@ export const ADMIN_PASSWORDS: Record<string, string> = { 'Fso': 'admin' };
 
 export const STORE_KEYS: Record<string, string>  = { arafa:'rj_arafa', mina:'rj_mina', masaken:'rj_masaken' };
 export const DATE_KEYS: Record<string, string>   = { arafa:'rj_hdate_arafa', mina:'rj_hdate_mina', masaken:'rj_hdate_masaken' };
-export const PAGE_LABELS: Record<string, string> = { home:'الرئيسية', arafa:'عرفة', mina:'منى', masaken:'المساكن', upload:'الإعدادات', users:'إدارة المستخدمين', reports:'التقارير', 'manage-reports':'إدارة التقارير' };
+export const PAGE_LABELS: Record<string, string> = { home:'الرئيسية', arafa:'عرفة', mina:'منى', masaken:'المساكن', upload:'الإعدادات', users:'إدارة المستخدمين', reports:'التقارير', 'manage-reports':'إدارة التقارير', 'madar_reports':'المحاضر' };
 export const PAGE_DESCS: Record<string, string>  = { masaken:'آخر تقييمات جميع المساكن', mina:'آخر تقييمات جميع مخيمات منى', arafa:'آخر تقييمات جميع مخيمات عرفة' };
 
 export interface Phase {
@@ -58,6 +58,13 @@ export const REPORTS: Report[] = [
     desc:  'تقويم وصول حجاج باكستان إلى مكة المكرمة',
     icon:  '✈️',
     file:  '/reports/pakistan_flights.html'
+  },
+  {
+    key:   'madar_reports',
+    label: 'المحاضر',
+    desc:  'سجل المحاضر الميدانية',
+    icon:  '📄',
+    file:  '/reports/madar_reports.html'
   }
 ];
 
