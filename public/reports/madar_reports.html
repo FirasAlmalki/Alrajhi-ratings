@@ -213,9 +213,7 @@ body{background:#0F1923;font-family:'Tajawal','Segoe UI',Tahoma,Arial,sans-serif
 </div>
 
 <script>
-const SB_URL = 'https://ectajbmqxucrrbyymbbp.supabase.co';
-const SB_KEY = 'sb_publishable_MZfGz7I6NLLR95_DRcM_zQ_zsH8JRSn';
-const TABLE  = 'madar_records'; // اسم الجدول في Supabase
+const WEBHOOK_URL = 'https://n8n.thelpw.com/webhook/mahadher';
 
 const NAVY='#1B3A6B', GOLD='#C9A84C', LGRAY='#d0ccc4', GREEN='#2e7d32', RED='#c62828', GRAY='#8a9fc0';
 const PALETTE=[NAVY,GOLD,RED,GREEN,GRAY,'#5d4037','#1565c0','#e65100','#4a148c','#006064','#558b2f','#6a1b9a'];
@@ -253,11 +251,10 @@ function topN(obj,n=12){
 
 // ── Load ─────────────────────────────────────────────────────────────────────
 async function loadData(){
-  const r=await fetch(`${SB_URL}/rest/v1/${TABLE}?select=*&order=ID.desc&limit=5000`,{
-    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
-  });
+  const r=await fetch(WEBHOOK_URL);
   if(!r.ok) throw new Error('fetch failed');
-  return r.json();
+  const data=await r.json();
+  return Array.isArray(data)?data:[data];
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
