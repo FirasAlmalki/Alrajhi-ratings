@@ -9,7 +9,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { role, syncData, syncing } = useApp();
   
-  const [urls, setUrls] = useState({ arafa: '', mina: '', masaken: '' });
+  const [urls, setUrls] = useState({ arafa: '', mina: '', masaken: '', madar: '' });
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -20,7 +20,8 @@ export default function SettingsPage() {
     setUrls({
       arafa: getWebhookUrl('arafa'),
       mina: getWebhookUrl('mina'),
-      masaken: getWebhookUrl('masaken')
+      masaken: getWebhookUrl('masaken'),
+      madar: getWebhookUrl('madar')
     });
   }, [role, router]);
 
@@ -39,7 +40,8 @@ export default function SettingsPage() {
   const sections = [
     { k: 'arafa', label: 'عرفة', icon: '🕌' },
     { k: 'mina', label: 'منى', icon: '⛺' },
-    { k: 'masaken', label: 'المساكن', icon: '🏨' }
+    { k: 'masaken', label: 'المساكن', icon: '🏨' },
+    { k: 'madar', label: 'مدار', icon: '📄' }
   ];
 
   return (

@@ -71,10 +71,11 @@ export const REPORTS: Report[] = [
 export const WEBHOOK_DEFAULTS: Record<string, string> = {
   mina:    'https://n8n.thelpw.com/webhook/mena',
   arafa:   'https://n8n.thelpw.com/webhook/arafa',
-  masaken: 'https://n8n.thelpw.com/webhook/masaken'
+  masaken: 'https://n8n.thelpw.com/webhook/masaken',
+  madar:   ''
 };
 
-export const WEBHOOK_NAMES: Record<string, string> = { arafa:'عرفة', mina:'منى', masaken:'المساكن' };
+export const WEBHOOK_NAMES: Record<string, string> = { arafa:'عرفة', mina:'منى', masaken:'المساكن', madar:'مدار' };
 export const WH_KEY = 'rj_webhook_urls';
 
 export function getWebhookUrl(cat: string): string {
