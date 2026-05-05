@@ -72,7 +72,7 @@ export const WEBHOOK_DEFAULTS: Record<string, string> = {
   mina:    'https://n8n.thelpw.com/webhook/mena',
   arafa:   'https://n8n.thelpw.com/webhook/arafa',
   masaken: 'https://n8n.thelpw.com/webhook/masaken',
-  madar:   ''
+  madar:   'https://n8n.thelpw.com/webhook/mahadher'
 };
 
 export const WEBHOOK_NAMES: Record<string, string> = { arafa:'عرفة', mina:'منى', masaken:'المساكن', madar:'محاضر' };
