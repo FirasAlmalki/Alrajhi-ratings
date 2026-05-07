@@ -104,7 +104,6 @@ body{background:#0F1923;font-family:'Tajawal','Segoe UI',Tahoma,Arial,sans-serif
 <div class="phdr">
   <div class="phdr-logo">الراجحي<small>Al Rajhi</small></div>
   <div class="phdr-title">المحاضر والمخالفات اليومي</div>
-  <div class="phdr-date" id="pageDate"></div>
 </div>
 
 <!-- Filter bar -->
@@ -166,7 +165,7 @@ body{background:#0F1923;font-family:'Tajawal','Segoe UI',Tahoma,Arial,sans-serif
       </div>
       <div class="kpi-card kpi-light">
         <div class="kpi-val" id="kpiToday">0</div>
-        <div class="kpi-lbl">محاضر اليوم</div>
+        <div class="kpi-lbl" id="kpiTodayLbl">محاضر اليوم</div>
       </div>
     </div>
 
@@ -259,11 +258,6 @@ async function loadData(){
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 (async function init(){
-  const now=new Date();
-  const hi=now.toLocaleDateString('ar-SA-u-ca-islamic',{year:'numeric',month:'numeric',day:'numeric'});
-  const gr=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
-  document.getElementById('pageDate').innerHTML=`${hi}<br>${gr}`;
-
   try{
     allData=await loadData();
     if(!Array.isArray(allData)) allData=[];
@@ -310,12 +304,26 @@ function clearFilter(){
   renderAll();
 }
 
+// ── Last date label ──────────────────────────────────────────────────────────
+function lastDateLabel(){
+  const dates=allData.map(r=>parseDate(r['التاريخ'])).filter(Boolean);
+  if(!dates.length) return {iso:null,label:'محاضر اليوم'};
+  const iso=dates.sort().slice(-1)[0];          // latest ISO date
+  const [y,m,d]=iso.split('-');
+  const gr=`${d}/${m}/${y}`;
+  const dt=new Date(`${y}-${m}-${d}`);
+  const hi=dt.toLocaleDateString('ar-SA-u-ca-islamic',{year:'numeric',month:'numeric',day:'numeric'});
+  return {iso, label:`محاضر يوم ${gr}\n${hi}`};
+}
+
 // ── Render ───────────────────────────────────────────────────────────────────
 function renderAll(){
-  const today=todayISO();
-  const todayCnt=allData.filter(r=>parseDate(r['التاريخ'])===today).length;
+  const {iso:lastISO, label:lastLbl}=lastDateLabel();
+  const lastCnt=lastISO?allData.filter(r=>parseDate(r['التاريخ'])===lastISO).length:0;
   document.getElementById('kpiTotal').textContent=filteredData.length.toLocaleString('en-US');
-  document.getElementById('kpiToday').textContent=todayCnt.toLocaleString('en-US');
+  document.getElementById('kpiToday').textContent=lastCnt.toLocaleString('en-US');
+  document.getElementById('kpiTodayLbl').style.whiteSpace='pre-line';
+  document.getElementById('kpiTodayLbl').textContent=lastLbl;
 
   renderDonut('cClosed',
     countBy(filteredData,r=>r['انتهت الحالة']),
