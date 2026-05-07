@@ -73,6 +73,7 @@ body{background:#0F1923;color:#F0EAD6}
 .ccard-hdr{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;user-select:none;transition:background .15s}
 .ccard-hdr:hover{background:#1f2e45}
 .ccard-name{font-size:.88rem;font-weight:700;color:#F0EAD6;flex:1}
+.ccard-pct{font-size:.82rem;font-weight:700;color:#C9A84C;min-width:40px;text-align:center}
 .ccard-badges{display:flex;gap:6px;align-items:center}
 .cbadge{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:26px;padding:0 8px;border-radius:6px;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .15s;border:none}
 .cbadge:hover{opacity:.8}
@@ -180,12 +181,6 @@ body{background:#0F1923;color:#F0EAD6}
     <!-- KPI cards -->
     <div class="kpi-row" id="kpiRow"></div>
 
-    <!-- Average bar -->
-    <div class="avg-bar" id="avgBar">
-      <span class="avg-bar-lbl">متوسط جميع الاستمارات</span>
-      <div class="avg-bar-line"></div>
-      <span class="avg-bar-val" id="avgVal">—</span>
-    </div>
 
     <!-- Centers -->
     <div class="centers-grid" id="centersGrid"></div>
@@ -391,9 +386,6 @@ function renderKPIs(){
       <div class="kpi-pct">${pct}</div>
     </div>`;
   }).join('');
-  // Average value
-  const all=avgScore(filteredData);
-  document.getElementById('avgVal').textContent=all!=null?Math.round(all*100)+'%':'—';
 }
 
 // ── Center cards ─────────────────────────────────────────────────────────────
@@ -428,10 +420,14 @@ function renderCenters(){
     }).join('');
 
     const id='c_'+cname.replace(/[^a-zA-Z0-9]/g,'_');
+    const cAvg=avgScore(cRows);
+    const cPctTxt=cAvg!=null?Math.round(cAvg*100)+'%':'—';
+
     return `<div class="ccard">
       <div class="ccard-hdr" onclick="toggleCenter('${id}')">
         <div class="ccard-name">${cname}</div>
         <div class="ccard-badges">${badges}</div>
+        <div class="ccard-pct">${cPctTxt}</div>
         <span class="carrow" id="arr_${id}">▼</span>
       </div>
       <div class="ccard-body" id="${id}">${bodyRows}</div>
