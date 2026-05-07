@@ -40,8 +40,8 @@ body{background:#0F1923;color:#F0EAD6}
 .export-btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* KPI row */
-.kpi-row{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap}
-.kpi-card{flex:1;min-width:200px;border-radius:12px;padding:18px 22px;cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid transparent;text-align:center}
+.kpi-row{display:flex;gap:14px;margin-bottom:8px;flex-wrap:wrap}
+.kpi-card{flex:1;min-width:200px;border-radius:12px;padding:18px 22px 0 22px;cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid transparent;text-align:center;overflow:hidden}
 .kpi-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
 .kpi-istiqbal{background:#1B3A6B;border-color:#2E5490}
 .kpi-mashaer{background:#2a2200;border-color:#C9A84C55}
@@ -54,10 +54,17 @@ body{background:#0F1923;color:#F0EAD6}
 .kpi-istiqbal .kpi-count{color:#F0EAD6}
 .kpi-mashaer .kpi-count{color:#C9A84C}
 .kpi-mughadara .kpi-count{color:#4db8c8}
-.kpi-pct{font-size:1rem;font-weight:700;margin-top:4px}
+.kpi-pct{font-size:1rem;font-weight:700;margin-top:4px;margin-bottom:10px}
 .kpi-istiqbal .kpi-pct{color:#C9A84C}
 .kpi-mashaer .kpi-pct{color:#C9A84C}
 .kpi-mughadara .kpi-pct{color:#4db8c8}
+.kpi-spark{display:block;width:100%;height:52px}
+
+/* Average bar */
+.avg-bar{background:#1B2535;border:1px solid #2E3D50;border-radius:10px;padding:12px 22px 0 22px;margin-bottom:20px;overflow:hidden}
+.avg-bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.avg-bar-lbl{font-size:.75rem;color:#8AADDA;font-weight:700}
+.avg-bar-val{font-size:1rem;font-weight:800;color:#C9A84C}
 
 /* Center grid */
 .centers-grid{display:flex;flex-direction:column;gap:8px}
@@ -171,6 +178,15 @@ body{background:#0F1923;color:#F0EAD6}
 
     <!-- KPI cards -->
     <div class="kpi-row" id="kpiRow"></div>
+
+    <!-- Average bar -->
+    <div class="avg-bar" id="avgBar">
+      <div class="avg-bar-top">
+        <span class="avg-bar-lbl">متوسط النسبة — جميع الاستمارات</span>
+        <span class="avg-bar-val" id="avgVal">—</span>
+      </div>
+      <canvas class="kpi-spark" id="avgSpark"></canvas>
+    </div>
 
     <!-- Centers -->
     <div class="centers-grid" id="centersGrid"></div>
@@ -311,7 +327,58 @@ function renderAll(){
 }
 
 // ── KPI cards ────────────────────────────────────────────────────────────────
+// ── Sparkline ────────────────────────────────────────────────────────────────
+function dailyCounts(rows){
+  const map={};
+  rows.forEach(r=>{const d=parseDate(r['التاريخ']);if(d){map[d]=(map[d]||0)+1;}});
+  return Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0]));
+}
+function dailyAvgScore(rows){
+  const map={};
+  rows.forEach(r=>{const d=parseDate(r['التاريخ']);if(d){if(!map[d])map[d]=[];map[d].push(r['النسبة']||0);}});
+  return Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])).map(([d,vals])=>[d,vals.reduce((s,v)=>s+v,0)/vals.length]);
+}
+function drawSparkline(canvas, points, color, fillAlpha=0.18){
+  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||300;
+  canvas.width=W; canvas.height=52;
+  if(!points||points.length<2) return;
+  const vals=points.map(p=>p[1]);
+  const mn=Math.min(...vals), mx=Math.max(...vals);
+  const range=mx-mn||1;
+  const pad=6;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,52);
+  const xs=points.map((_,i)=>pad+(W-2*pad)*i/(points.length-1));
+  const ys=points.map(p=>52-pad-(52-2*pad)*(p[1]-mn)/range);
+  // Fill
+  const grad=ctx.createLinearGradient(0,0,0,52);
+  grad.addColorStop(0,color.replace(')',`,${fillAlpha})`).replace('rgb','rgba'));
+  grad.addColorStop(1,color.replace(')',',0)').replace('rgb','rgba'));
+  ctx.beginPath();
+  ctx.moveTo(xs[0],ys[0]);
+  for(let i=1;i<xs.length;i++){
+    const cpx=(xs[i-1]+xs[i])/2;
+    ctx.bezierCurveTo(cpx,ys[i-1],cpx,ys[i],xs[i],ys[i]);
+  }
+  ctx.lineTo(xs[xs.length-1],52);
+  ctx.lineTo(xs[0],52);
+  ctx.closePath();
+  ctx.fillStyle=grad;
+  ctx.fill();
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(xs[0],ys[0]);
+  for(let i=1;i<xs.length;i++){
+    const cpx=(xs[i-1]+xs[i])/2;
+    ctx.bezierCurveTo(cpx,ys[i-1],cpx,ys[i],xs[i],ys[i]);
+  }
+  ctx.strokeStyle=color;
+  ctx.lineWidth=2;
+  ctx.stroke();
+}
+
 function renderKPIs(){
+  const COLORS={ist:'rgb(138,173,218)',mas:'rgb(201,168,76)',mug:'rgb(77,184,200)'};
   const row=document.getElementById('kpiRow');
   row.innerHTML=FORMS.map(f=>{
     const rows=filteredData.filter(r=>r['اسم القالب']===f.full);
@@ -322,8 +389,25 @@ function renderKPIs(){
       <div class="kpi-full-name">${f.full}</div>
       <div class="kpi-count">${cnt}</div>
       <div class="kpi-pct">${pct}</div>
+      <canvas class="kpi-spark" id="spark_${f.key}"></canvas>
     </div>`;
   }).join('');
+  // Draw sparklines after DOM update
+  requestAnimationFrame(()=>{
+    FORMS.forEach(f=>{
+      const rows=filteredData.filter(r=>r['اسم القالب']===f.full);
+      const pts=dailyCounts(rows);
+      const cv=document.getElementById('spark_'+f.key);
+      if(cv) drawSparkline(cv,pts,COLORS[f.key]);
+    });
+    // Average sparkline
+    const pts=dailyAvgScore(filteredData);
+    const avgCv=document.getElementById('avgSpark');
+    if(avgCv) drawSparkline(avgCv,pts,'rgb(201,168,76)',0.12);
+    // Average value
+    const all=avgScore(filteredData);
+    document.getElementById('avgVal').textContent=all!=null?Math.round(all*100)+'%':'—';
+  });
 }
 
 // ── Center cards ─────────────────────────────────────────────────────────────
