@@ -110,6 +110,14 @@ export default function Sidebar({ isOpen, onClose, currentPage }: SidebarProps) 
                 >
                   المحاضر
                 </button>
+                {(isAdmin || permissions['report_estemaarat']) && (
+                  <button
+                    className={`sidebar-item sub ${currentPage === 'estemaarat' ? 'active' : ''}`}
+                    onClick={() => navigate('/reports/estemaarat')}
+                  >
+                    الاستمارات
+                  </button>
+                )}
               </div>
             </div>
           </>
