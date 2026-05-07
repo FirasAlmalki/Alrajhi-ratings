@@ -41,16 +41,15 @@ body{background:#0F1923;color:#F0EAD6}
 
 /* KPI row */
 .kpi-row{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap}
-.kpi-card{flex:1;min-width:200px;border-radius:12px;padding:18px 22px;cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid transparent}
+.kpi-card{flex:1;min-width:200px;border-radius:12px;padding:18px 22px;cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid transparent;text-align:center}
 .kpi-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
 .kpi-istiqbal{background:#1B3A6B;border-color:#2E5490}
 .kpi-mashaer{background:#2a2200;border-color:#C9A84C55}
 .kpi-mughadara{background:#0d1f1f;border-color:#2E6E7E55}
-.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.kpi-type-badge{font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:10px}
-.kpi-istiqbal .kpi-type-badge{background:rgba(255,255,255,.15);color:#8AADDA}
-.kpi-mashaer .kpi-type-badge{background:rgba(201,168,76,.2);color:#C9A84C}
-.kpi-mughadara .kpi-type-badge{background:rgba(46,110,126,.3);color:#4db8c8}
+.kpi-full-name{font-size:.72rem;font-weight:700;margin-bottom:10px;line-height:1.4}
+.kpi-istiqbal .kpi-full-name{color:#8AADDA}
+.kpi-mashaer .kpi-full-name{color:#C9A84C}
+.kpi-mughadara .kpi-full-name{color:#4db8c8}
 .kpi-count{font-size:2.2rem;font-weight:800;line-height:1}
 .kpi-istiqbal .kpi-count{color:#F0EAD6}
 .kpi-mashaer .kpi-count{color:#C9A84C}
@@ -59,7 +58,6 @@ body{background:#0F1923;color:#F0EAD6}
 .kpi-istiqbal .kpi-pct{color:#C9A84C}
 .kpi-mashaer .kpi-pct{color:#C9A84C}
 .kpi-mughadara .kpi-pct{color:#4db8c8}
-.kpi-lbl{font-size:.72rem;color:#8AADDA;margin-top:6px}
 
 /* Center grid */
 .centers-grid{display:flex;flex-direction:column;gap:8px}
@@ -109,7 +107,10 @@ body{background:#0F1923;color:#F0EAD6}
 
 /* Table */
 .mtable{width:100%;border-collapse:collapse;font-size:.76rem}
-.mtable th{background:#1B3A6B;color:#C9A84C;padding:8px 10px;text-align:center;border:1px solid #2E5490;font-weight:700;position:sticky;top:0;white-space:nowrap}
+.mtable th{background:#1B3A6B;color:#C9A84C;padding:8px 10px;text-align:center;border:1px solid #2E5490;font-weight:700;position:sticky;top:0;white-space:nowrap;cursor:pointer;user-select:none}
+.mtable th:hover{background:#1e4080}
+.mtable th .sort-arrow{margin-right:4px;font-size:.65rem;opacity:.6}
+.mtable th.sorted .sort-arrow{opacity:1;color:#fff}
 .mtable td{padding:7px 10px;text-align:center;border:1px solid #2E3D50;color:#F0EAD6;vertical-align:middle}
 .mtable td.txt{text-align:right;white-space:normal;line-height:1.4}
 .mtable tr:nth-child(even) td{background:#1a2d42}
@@ -215,8 +216,8 @@ const ALL_CENTERS = [
   'مركز ضيافة باكستان (141)','مركز ضيافة باكستان (142)','مركز ضيافة باكستان (143)',
   'مركز ضيافة باكستان (144)','مركز ضيافة باكستان (145)','مركز ضيافة باكستان (146)',
   'مركز ضيافة باكستان (147)','مركز ضيافة باكستان (148)',
-  'مركز ضيافة نيجير (150)','مركز ضيافة نيجير (151)',
-  'مركز ضيافة نيجير (152)','مركز ضيافة نيجير (153)',
+  'مركز ضيافة النيجر (150)','مركز ضيافة النيجر (151)',
+  'مركز ضيافة النيجر (152)','مركز ضيافة النيجر (153)',
 ];
 
 let allData=[], filteredData=[];
@@ -318,10 +319,9 @@ function renderKPIs(){
     const avg=avgScore(rows);
     const pct=avg!=null?Math.round(avg*100)+'%':'—';
     return `<div class="kpi-card ${f.kpiCls}" onclick="showModal('${f.label}',filterByForm(filteredData,'${f.full}'))">
-      <div class="kpi-top"><span class="kpi-type-badge">${f.label}</span></div>
+      <div class="kpi-full-name">${f.full}</div>
       <div class="kpi-count">${cnt}</div>
       <div class="kpi-pct">${pct}</div>
-      <div class="kpi-lbl">استمارة · اضغط للتفاصيل</div>
     </div>`;
   }).join('');
 }
@@ -391,23 +391,53 @@ function showModal(title,rows){
 }
 function closeModal(){ document.getElementById('modalOv').classList.remove('open'); }
 
-function buildTable(rows){
-  const sorted=[...rows].sort((a,b)=>{
-    const da=parseDate(a['التاريخ'])||'';
-    const db=parseDate(b['التاريخ'])||'';
-    return db.localeCompare(da);
+let _sortCol=1, _sortAsc=false;  // default: sort by date desc
+
+const COLS=[
+  {label:'#',        key:'_idx',    sortable:false},
+  {label:'التاريخ', key:'التاريخ', sortable:true},
+  {label:'نوع الاستمارة', key:'اسم القالب', sortable:true},
+  {label:'مركز الضيافة', key:'فريق الضيافة', sortable:true},
+  {label:'الموقع',  key:'الموقع',  sortable:true},
+  {label:'النسبة',  key:'النسبة',  sortable:true},
+];
+
+function sortRows(rows){
+  const col=COLS[_sortCol];
+  if(!col||!col.sortable) return [...rows];
+  return [...rows].sort((a,b)=>{
+    let va=a[col.key], vb=b[col.key];
+    if(col.key==='التاريخ'){va=parseDate(va)||'';vb=parseDate(vb)||'';}
+    if(col.key==='النسبة'){va=va||0;vb=vb||0;}
+    va=String(va||''); vb=String(vb||'');
+    const c=va.localeCompare(vb,'ar');
+    return _sortAsc?c:-c;
   });
+}
+
+function buildTable(rows){
+  const sorted=sortRows(rows);
+  const ths=COLS.map((c,i)=>{
+    if(!c.sortable) return `<th>${c.label}</th>`;
+    const isSorted=_sortCol===i;
+    const arrow=isSorted?(_sortAsc?'▲':'▼'):'⇅';
+    return `<th class="${isSorted?'sorted':''}" onclick="sortTable(${i})"><span class="sort-arrow">${arrow}</span>${c.label}</th>`;
+  }).join('');
   const trs=sorted.map((r,i)=>`<tr>
     <td>${i+1}</td>
     <td style="white-space:nowrap">${fmtDate(r['التاريخ'])}</td>
-    <td class="txt">${formByFull(r['اسم القالب'])?.label||r['اسم القالب']}</td>
+    <td class="txt">${r['اسم القالب']||'—'}</td>
     <td class="txt">${r['فريق الضيافة']||'—'}</td>
     <td>${r['الموقع']||'—'}</td>
     <td>${pctPill(r['النسبة'])}</td>
   </tr>`).join('');
-  return `<table class="mtable"><thead><tr>
-    <th>#</th><th>التاريخ</th><th>نوع الاستمارة</th><th>مركز الضيافة</th><th>الموقع</th><th>النسبة</th>
-  </tr></thead><tbody>${trs}</tbody></table>`;
+  return `<table class="mtable"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+function sortTable(colIdx){
+  if(_sortCol===colIdx){ _sortAsc=!_sortAsc; }
+  else { _sortCol=colIdx; _sortAsc=true; }
+  document.getElementById('modalBody').innerHTML=_modalRows.length?buildTable(_modalRows):'<div class="no-data">لا توجد بيانات</div>';
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
