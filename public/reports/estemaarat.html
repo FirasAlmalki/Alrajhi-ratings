@@ -132,6 +132,48 @@ body{background:#0F1923;color:#F0EAD6}
 .pct-mid{background:#3a2e00;color:#C9A84C;border:1px solid #6a5200}
 .pct-lo{background:#3a1a1a;color:#e07070;border:1px solid #6a2a2a}
 
+/* Centers list popup */
+.clist-modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:700;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.clist-modal-ov.open{display:flex}
+.clist-modal-box{background:#1B2535;border:1px solid #2E3D50;border-radius:14px;width:100%;max-width:520px;margin-top:16px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.clist-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#1B3A6B;border-radius:14px 14px 0 0;border-bottom:2px solid #C9A84C}
+.clist-hdr-title{color:#C9A84C;font-size:.9rem;font-weight:700;flex:1}
+.clist-hdr-actions{display:flex;gap:8px}
+.clist-print-btn{background:rgba(201,168,76,.15);border:1px solid #C9A84C55;border-radius:6px;color:#C9A84C;padding:4px 12px;cursor:pointer;font-family:inherit;font-size:.78rem;font-weight:700}
+.clist-print-btn:hover{background:rgba(201,168,76,.25)}
+.clist-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#F0EAD6;padding:4px 12px;cursor:pointer;font-family:inherit;font-size:.82rem}
+.clist-close:hover{background:rgba(255,255,255,.2)}
+.clist-body{padding:14px 18px;max-height:70vh;overflow-y:auto}
+.clist-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-bottom:1px solid #2E3D50;font-size:.82rem}
+.clist-row:last-child{border-bottom:none}
+.clist-row:nth-child(even){background:#1a2d42}
+.clist-cname{color:#F0EAD6}
+.clist-cnt{font-weight:700;color:#C9A84C;min-width:30px;text-align:center}
+.clist-zero .clist-cname{color:#3a4f66}
+.clist-zero .clist-cnt{color:#3a4f66}
+.copy-btn{background:#2E3D50;border:none;border-radius:6px;color:#8AADDA;padding:4px 12px;cursor:pointer;font-family:inherit;font-size:.78rem;margin-right:6px}
+.copy-btn:hover{background:#374d63}
+
+/* KPI action row */
+.kpi-actions{display:flex;justify-content:center;margin-top:8px}
+.kpi-action-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#F0EAD6;padding:4px 12px;cursor:pointer;font-family:inherit;font-size:.72rem;font-weight:700}
+.kpi-action-btn:hover{background:rgba(255,255,255,.2)}
+
+/* Print styles */
+@media print{
+  body{background:#fff!important;color:#000!important}
+  .phdr,.fbar,.main,.modal-ov,.clist-hdr-actions{display:none!important}
+  .clist-modal-ov{position:static!important;background:none!important;padding:0!important;display:block!important}
+  .clist-modal-box{box-shadow:none!important;border:none!important;max-width:100%!important}
+  .clist-hdr{background:#1B3A6B!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:0!important}
+  .clist-body{max-height:none!important;overflow:visible!important}
+  .clist-row{border-bottom:1px solid #ccc!important}
+  .clist-row:nth-child(even){background:#f5f5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .clist-cname{color:#000!important}
+  .clist-cnt{color:#1B3A6B!important}
+  .clist-zero .clist-cname,.clist-zero .clist-cnt{color:#aaa!important}
+}
+
 @media(max-width:768px){
   .phdr{padding:10px 14px;flex-wrap:wrap}
   .fbar{padding:10px 14px}
@@ -185,6 +227,21 @@ body{background:#0F1923;color:#F0EAD6}
     <!-- Centers -->
     <div class="centers-grid" id="centersGrid"></div>
 
+  </div>
+</div>
+
+<!-- Centers list popup -->
+<div class="clist-modal-ov" id="clistOv" onclick="if(event.target===this)closeClist()">
+  <div class="clist-modal-box">
+    <div class="clist-hdr">
+      <span class="clist-hdr-title">عدد استمارات الاستقبال — جميع المراكز</span>
+      <div class="clist-hdr-actions">
+        <button class="copy-btn" onclick="copyCentersList()">نسخ</button>
+        <button class="clist-print-btn" onclick="window.print()">طباعة PDF</button>
+        <button class="clist-close" onclick="closeClist()">✕</button>
+      </div>
+    </div>
+    <div class="clist-body" id="clistBody"></div>
   </div>
 </div>
 
@@ -379,11 +436,15 @@ function renderKPIs(){
     const cnt=rows.length;
     const avg=avgScore(rows);
     const pct=avg!=null?Math.round(avg*100)+'%':'—';
+    const actionBtn = f.key==='ist'
+      ? `<div class="kpi-actions"><button class="kpi-action-btn" onclick="event.stopPropagation();openClist()">نسخ جميع المراكز</button></div>`
+      : '';
     return `<div class="kpi-card ${f.kpiCls}" onclick="showModal('${f.label}',filterByForm(filteredData,'${f.full}'))">
       <div class="kpi-full-name">${f.full}</div>
       <div class="kpi-count">${cnt}</div>
       <hr class="kpi-divider">
       <div class="kpi-pct">${pct}</div>
+      ${actionBtn}
     </div>`;
   }).join('');
 }
@@ -504,6 +565,35 @@ function sortTable(colIdx){
   if(_sortCol===colIdx){ _sortAsc=!_sortAsc; }
   else { _sortCol=colIdx; _sortAsc=true; }
   document.getElementById('modalBody').innerHTML=_modalRows.length?buildTable(_modalRows):'<div class="no-data">لا توجد بيانات</div>';
+}
+
+// ── Centers list (استقبال) ────────────────────────────────────────────────────
+function openClist(){
+  const istFull=FORMS.find(f=>f.key==='ist').full;
+  const rows=ALL_CENTERS.map(cname=>{
+    const cnt=filteredData.filter(r=>r['فريق الضيافة']===cname&&r['اسم القالب']===istFull).length;
+    return {cname,cnt};
+  });
+  const html=rows.map(r=>`
+    <div class="clist-row${r.cnt===0?' clist-zero':''}">
+      <span class="clist-cname">${r.cname}</span>
+      <span class="clist-cnt">${r.cnt||'—'}</span>
+    </div>`).join('');
+  document.getElementById('clistBody').innerHTML=html;
+  document.getElementById('clistOv').classList.add('open');
+}
+function closeClist(){ document.getElementById('clistOv').classList.remove('open'); }
+function copyCentersList(){
+  const istFull=FORMS.find(f=>f.key==='ist').full;
+  const lines=ALL_CENTERS.map(cname=>{
+    const cnt=filteredData.filter(r=>r['فريق الضيافة']===cname&&r['اسم القالب']===istFull).length;
+    return `${cname}\t${cnt||0}`;
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+    const btn=document.querySelector('.copy-btn');
+    btn.textContent='✓ تم النسخ';
+    setTimeout(()=>{btn.textContent='نسخ';},2000);
+  });
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
