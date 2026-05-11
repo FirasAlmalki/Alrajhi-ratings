@@ -2,7 +2,7 @@ export const ADMIN_PASSWORDS: Record<string, string> = { 'Fso': 'admin' };
 
 export const STORE_KEYS: Record<string, string>  = { arafa:'rj_arafa', mina:'rj_mina', masaken:'rj_masaken' };
 export const DATE_KEYS: Record<string, string>   = { arafa:'rj_hdate_arafa', mina:'rj_hdate_mina', masaken:'rj_hdate_masaken' };
-export const PAGE_LABELS: Record<string, string> = { home:'الرئيسية', arafa:'عرفة', mina:'منى', masaken:'المساكن', upload:'الإعدادات', users:'إدارة المستخدمين', reports:'التقارير', 'manage-reports':'إدارة التقارير', 'madar_reports':'المحاضر', 'estemaarat':'الاستمارات' };
+export const PAGE_LABELS: Record<string, string> = { home:'الرئيسية', arafa:'عرفة', mina:'منى', masaken:'المساكن', upload:'الإعدادات', users:'إدارة المستخدمين', reports:'التقارير', 'manage-reports':'إدارة التقارير', 'madar_reports':'المحاضر', 'estemaarat':'الاستمارات', 'egypt_flights_makkah':'وصول رحلات مصر (جدة-مكة)', 'egypt_flights_madinah':'وصول رحلات مصر (المدينة المنورة)' };
 export const PAGE_DESCS: Record<string, string>  = { masaken:'آخر تقييمات جميع المساكن', mina:'آخر تقييمات جميع مخيمات منى', arafa:'آخر تقييمات جميع مخيمات عرفة' };
 
 export interface Phase {
@@ -58,6 +58,20 @@ export const REPORTS: Report[] = [
     desc:  'تقويم وصول حجاج باكستان إلى مكة المكرمة',
     icon:  '✈️',
     file:  '/reports/pakistan_flights.html'
+  },
+  {
+    key:   'egypt_flights_makkah',
+    label: 'وصول رحلات مصر (جدة-مكة)',
+    desc:  'تقويم وصول حجاج مصر إلى مكة المكرمة',
+    icon:  '✈️',
+    file:  '/reports/egypt_flights_makkah.html'
+  },
+  {
+    key:   'egypt_flights_madinah',
+    label: 'وصول رحلات مصر (المدينة المنورة)',
+    desc:  'تقويم وصول حجاج مصر إلى المدينة المنورة',
+    icon:  '✈️',
+    file:  '/reports/egypt_flights_madinah.html'
   }
 ];
 
