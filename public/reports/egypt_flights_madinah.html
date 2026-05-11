@@ -154,11 +154,14 @@ const MN = ['يناير','فبراير','مارس','أبريل','مايو','يو
 function fmt(n) { return Number(n).toLocaleString('en-US'); }
 
 function parseDate(s) {
+  // DD/MM/YY  e.g. 07/05/26 → 2026-05-07
   if (!s) return null;
   const p = s.trim().split('/');
   if (p.length !== 3) return null;
-  const m = parseInt(p[0], 10), d = parseInt(p[1], 10), y = parseInt(p[2], 10);
-  if (isNaN(m) || isNaN(d) || isNaN(y)) return null;
+  const d = parseInt(p[0], 10), m = parseInt(p[1], 10);
+  let y = parseInt(p[2], 10);
+  if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+  if (y < 100) y += 2000;
   return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
 
