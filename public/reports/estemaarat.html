@@ -237,7 +237,8 @@ body{background:#0F1923;color:#F0EAD6}
       <span class="clist-hdr-title">عدد استمارات الاستقبال — جميع المراكز</span>
       <div class="clist-hdr-actions">
         <button class="copy-btn" onclick="copyCentersList()">نسخ</button>
-        <button class="clist-print-btn" onclick="window.print()">طباعة PDF</button>
+        <button class="clist-print-btn" onclick="printClist(false)">طباعة الكل PDF</button>
+        <button class="clist-print-btn" style="background:rgba(220,80,80,.15);border-color:#c0392b88;color:#e07070" onclick="printClist(true)">طباعة الصفر PDF</button>
         <button class="clist-close" onclick="closeClist()">✕</button>
       </div>
     </div>
@@ -583,6 +584,32 @@ function openClist(){
   document.getElementById('clistOv').classList.add('open');
 }
 function closeClist(){ document.getElementById('clistOv').classList.remove('open'); }
+function printClist(zeroOnly){
+  const istFull=FORMS.find(f=>f.key==='ist').full;
+  const rows=ALL_CENTERS.map(cname=>({
+    cname,
+    cnt:filteredData.filter(r=>r['فريق الضيافة']===cname&&r['اسم القالب']===istFull).length
+  })).filter(r=>!zeroOnly||r.cnt===0);
+  const title=zeroOnly?'المراكز بدون استمارات استقبال':'عدد استمارات الاستقبال — جميع المراكز';
+  const rows_html=rows.map(r=>`<tr><td>${r.cname}</td><td style="text-align:center;font-weight:bold">${r.cnt||'0'}</td></tr>`).join('');
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+  <style>body{font-family:'Tajawal',Arial,sans-serif;padding:24px;direction:rtl}
+  h2{color:#1B3A6B;border-bottom:2px solid #C9A84C;padding-bottom:8px;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:#1B3A6B;color:#C9A84C;padding:8px 12px;text-align:right}
+  td{padding:7px 12px;border-bottom:1px solid #ddd}
+  tr:nth-child(even) td{background:#f5f5f5}
+  .footer{margin-top:20px;font-size:11px;color:#888;text-align:center}
+  </style></head><body>
+  <h2>${title}</h2>
+  <table><thead><tr><th>المركز</th><th style="text-align:center">العدد</th></tr></thead>
+  <tbody>${rows_html}</tbody></table>
+  <div class="footer">الراجحي للخدمات المساندة · إدارة الامتثال والالتزام · موسم الحج 1447</div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
 function copyCentersList(){
   const istFull=FORMS.find(f=>f.key==='ist').full;
   const lines=ALL_CENTERS.map(cname=>{
