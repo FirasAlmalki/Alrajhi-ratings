@@ -288,7 +288,7 @@ const ALL_CENTERS = [
   'مركز ضيافة النيجر (152)','مركز ضيافة النيجر (153)',
 ];
 
-let allData=[], filteredData=[];
+let rawData=[], allData=[], filteredData=[];
 let _modalRows=[];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -317,14 +317,35 @@ function pctPill(v){
   return `<span class="pct-pill ${cls}">${p}%</span>`;
 }
 function formByFull(full){ return FORMS.find(f=>f.full===full); }
+function centerSortValue(name){
+  const s = String(name||'');
+  const match = s.match(/^(.*?\((\d+)\))\s*([A-Za-z])?$/);
+  if(!match) return {base:s, num:9999, suffix:''};
+  return {base:match[1], num:Number(match[2]), suffix:match[3]||''};
+}
+function sortCenters(a,b){
+  const av=centerSortValue(a), bv=centerSortValue(b);
+  const baseCmp = av.base.localeCompare(bv.base,'ar');
+  if(baseCmp!==0) return baseCmp;
+  if(av.num!==bv.num) return av.num-bv.num;
+  return av.suffix.localeCompare(bv.suffix,'en');
+}
+function getCentersList(sourceRows=rawData){
+  const centers = new Set();
+  sourceRows.forEach(r=>{
+    const c = String(r['فريق الضيافة']||'').trim();
+    if(c) centers.add(c);
+  });
+  return [...centers].sort(sortCenters);
+}
 
 // ── Load ─────────────────────────────────────────────────────────────────────
 async function loadData(){
   const r=await fetch(WEBHOOK);
   if(!r.ok) throw new Error('fetch failed');
   const d=await r.json();
-  return (Array.isArray(d)?d:[d])
-    .filter(r=>FORM_FULL_SET.has(r['اسم القالب']) && r['فريق الضيافة']);
+  rawData = (Array.isArray(d)?d:[d]).filter(r=>r['فريق الضيافة']);
+  return rawData.filter(r=>FORM_FULL_SET.has(r['اسم القالب']));
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
@@ -338,7 +359,7 @@ async function loadData(){
 
   // Populate center dropdown
   const sel=document.getElementById('fCenter');
-  ALL_CENTERS.forEach(c=>{
+  getCentersList(rawData).forEach(c=>{
     const o=document.createElement('option');
     o.value=o.textContent=c;
     sel.appendChild(o);
@@ -455,7 +476,7 @@ function renderCenters(){
   const grid=document.getElementById('centersGrid');
   // Determine which centers to show: if center filter active, only that center
   const centerFilter=document.getElementById('fCenter').value;
-  const centers=centerFilter?[centerFilter]:ALL_CENTERS;
+  const centers=centerFilter?[centerFilter]:getCentersList(rawData);
 
   grid.innerHTML=centers.map(cname=>{
     const cRows=filteredData.filter(r=>r['فريق الضيافة']===cname);
@@ -571,7 +592,7 @@ function sortTable(colIdx){
 // ── Centers list (استقبال) ────────────────────────────────────────────────────
 function openClist(){
   const istFull=FORMS.find(f=>f.key==='ist').full;
-  const rows=ALL_CENTERS.map(cname=>{
+  const rows=getCentersList(rawData).map(cname=>{
     const cnt=filteredData.filter(r=>r['فريق الضيافة']===cname&&r['اسم القالب']===istFull).length;
     return {cname,cnt};
   });
@@ -586,7 +607,7 @@ function openClist(){
 function closeClist(){ document.getElementById('clistOv').classList.remove('open'); }
 function printClist(zeroOnly){
   const istFull=FORMS.find(f=>f.key==='ist').full;
-  const rows=ALL_CENTERS.map(cname=>({
+  const rows=getCentersList(rawData).map(cname=>({
     cname,
     cnt:filteredData.filter(r=>r['فريق الضيافة']===cname&&r['اسم القالب']===istFull).length
   })).filter(r=>!zeroOnly||r.cnt===0);
@@ -612,7 +633,7 @@ function printClist(zeroOnly){
 }
 function copyCentersList(){
   const istFull=FORMS.find(f=>f.key==='ist').full;
-  const lines=ALL_CENTERS.map(cname=>{
+  const lines=getCentersList(rawData).map(cname=>{
     const cnt=filteredData.filter(r=>r['فريق الضيافة']===cname&&r['اسم القالب']===istFull).length;
     return `${cname}\t${cnt||0}`;
   });
