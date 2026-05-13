@@ -462,6 +462,7 @@ function renderKPIs(){
       ? `<div class="kpi-actions"><button class="kpi-action-btn" onclick="event.stopPropagation();openClist()">نسخ جميع المراكز</button></div>`
       : '';
     return `<div class="kpi-card ${f.kpiCls}" onclick="showModal('${f.label}',filterByForm(filteredData,'${f.full}'))">
+      <div class="kpi-full-name">${f.label}</div>
       <div class="kpi-count">${cnt}</div>
       <hr class="kpi-divider">
       <div class="kpi-pct">${pct}</div>
