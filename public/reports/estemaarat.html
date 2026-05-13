@@ -345,7 +345,14 @@ async function loadData(){
   const r=await fetch(WEBHOOK);
   if(!r.ok) throw new Error('fetch failed');
   const d=await r.json();
-  rawData = (Array.isArray(d)?d:[d]).filter(r=>r['فريق الضيافة']);
+  const seen=new Set();
+  rawData = (Array.isArray(d)?d:[d]).filter(r=>{
+    if(!r['فريق الضيافة']) return false;
+    const id=r['ID'];
+    if(id!=null && id!=='' && seen.has(id)) return false;
+    if(id!=null && id!=='') seen.add(id);
+    return true;
+  });
   return rawData.filter(r=>FORM_FULL_SET.has(r['اسم القالب']));
 }
 
