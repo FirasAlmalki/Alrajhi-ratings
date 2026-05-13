@@ -238,7 +238,7 @@ body{background:#0F1923;color:#F0EAD6}
       <div class="clist-hdr-actions">
         <button class="copy-btn" onclick="copyCentersList()">نسخ</button>
         <button class="clist-print-btn" onclick="printClist(false)">طباعة الكل PDF</button>
-        <button class="clist-print-btn" style="background:rgba(220,80,80,.15);border-color:#c0392b88;color:#e07070" onclick="printClist(true)">طباعة الصفر PDF</button>
+        <button class="clist-print-btn" style="background:rgba(220,80,80,.15);border-color:#c0392b88;color:#e07070" onclick="printClist(true)">تصدير أقل من 4 PDF</button>
         <button class="clist-close" onclick="closeClist()">✕</button>
       </div>
     </div>
@@ -462,7 +462,6 @@ function renderKPIs(){
       ? `<div class="kpi-actions"><button class="kpi-action-btn" onclick="event.stopPropagation();openClist()">نسخ جميع المراكز</button></div>`
       : '';
     return `<div class="kpi-card ${f.kpiCls}" onclick="showModal('${f.label}',filterByForm(filteredData,'${f.full}'))">
-      <div class="kpi-full-name">${f.full}</div>
       <div class="kpi-count">${cnt}</div>
       <hr class="kpi-divider">
       <div class="kpi-pct">${pct}</div>
@@ -610,8 +609,8 @@ function printClist(zeroOnly){
   const rows=getCentersList(rawData).map(cname=>({
     cname,
     cnt:filteredData.filter(r=>r['فريق الضيافة']===cname&&r['اسم القالب']===istFull).length
-  })).filter(r=>!zeroOnly||r.cnt===0);
-  const title=zeroOnly?'المراكز بدون استمارات استقبال':'عدد استمارات الاستقبال — جميع المراكز';
+  })).filter(r=>!zeroOnly||r.cnt<4);
+  const title=zeroOnly?'المراكز أقل من 4 استقبالات':'عدد استمارات الاستقبال — جميع المراكز';
   const rows_html=rows.map(r=>`<tr><td>${r.cname}</td><td style="text-align:center;font-weight:bold">${r.cnt||'0'}</td></tr>`).join('');
   const win=window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
