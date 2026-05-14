@@ -74,6 +74,11 @@ body{background:#F6F8FB;color:#102A4C}
 .center-score-footer{border-top:3px solid var(--gold);background:linear-gradient(180deg,#FFFFFF 0%,#F8FAFD 100%);padding:13px 16px;text-align:center}
 .center-score-footer span{display:block;font-size:.86rem;color:var(--navy);font-weight:800}
 .center-score-footer strong{display:block;margin-top:5px;font-size:2rem;line-height:1;color:var(--navy)}
+.missing-centers-panel{margin-bottom:16px}
+.missing-centers-body{padding:14px 16px;background:#fff}
+.missing-centers-list{display:flex;flex-wrap:wrap;gap:8px}
+.missing-center-chip{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:6px 10px;border-radius:8px;background:#FFF8E6;border:1px solid rgba(216,191,99,.55);color:var(--navy);font-weight:800;font-size:.86rem}
+.missing-centers-empty{color:var(--green);font-weight:800;text-align:center;padding:8px}
 .pill{display:inline-flex;align-items:center;justify-content:center;min-width:48px;border-radius:999px;padding:3px 9px;font-weight:800}
 .pill-no{background:#FBE7E7;color:var(--danger);border:1px solid #F0B9B9}
 .pill-rate{background:#EEF4FF;color:var(--navy);border:1px solid #C8D8F2}
@@ -143,6 +148,13 @@ body{background:#F6F8FB;color:#102A4C}
           <span>المعدل العام للإنجاز لجميع المراكز</span>
           <strong id="centerScoreAvg">—</strong>
         </div>
+      </div>
+      <div class="panel missing-centers-panel">
+        <div class="panel-hdr">
+          <span>المراكز التي لم يتم تقييمها</span>
+          <span class="center-score-sub" id="missingCentersCount">—</span>
+        </div>
+        <div class="missing-centers-body" id="missingCentersBody"></div>
       </div>
       <div class="layout">
         <div class="panel">
@@ -340,6 +352,7 @@ function renderAll(){
   centerRows=summarizeCenters(filteredRows);
   renderKpis();
   renderCenterComparison();
+  renderMissingCenters();
   renderTable();
   renderChart();
 }
@@ -353,6 +366,7 @@ function renderKpis(){
     <div class="kpi"><div class="kpi-lbl">عدد الأسئلة التي ظهر فيها لا</div><div class="kpi-val">${summaryRows.length}</div></div>
     <div class="kpi"><div class="kpi-lbl">نسبة لا من إجابات نعم/لا</div><div class="kpi-val">${totalAnswers?Math.round(totalNo/totalAnswers*100):0}%</div></div>
     <div class="kpi"><div class="kpi-lbl">المراكز المقيمة من القائمة</div><div class="kpi-val">${centersWithScores.length}/${TARGET_CENTERS.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">المراكز بدون تقييم</div><div class="kpi-val">${TARGET_CENTERS.length-centersWithScores.length}</div></div>
     <div class="kpi"><div class="kpi-lbl">أعلى سؤال</div><div class="kpi-val" style="font-size:1.05rem;line-height:1.45">${top?esc(top.question).slice(0,80):'—'}</div></div>`;
 }
 function renderCenterComparison(){
@@ -374,6 +388,16 @@ function renderCenterComparison(){
     <thead><tr><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th></tr></thead>
     <tbody>${rows}</tbody>`;
   document.getElementById('centerScoreAvg').textContent=avg==null?'—':fmtScore(avg);
+}
+function missingCenters(){
+  return centerRows.filter(r=>r.score==null).map(r=>r.center);
+}
+function renderMissingCenters(){
+  const missing=missingCenters();
+  document.getElementById('missingCentersCount').textContent=`${missing.length} مركز`;
+  document.getElementById('missingCentersBody').innerHTML=missing.length
+    ? `<div class="missing-centers-list">${missing.map(c=>`<span class="missing-center-chip">${c}</span>`).join('')}</div>`
+    : '<div class="missing-centers-empty">تم تقييم جميع المراكز المحددة</div>';
 }
 function renderTable(){
   const rows=summaryRows.map((r,i)=>`<tr>
@@ -542,6 +566,17 @@ async function exportExcel(){
     ws.addRow([]);
     const footer=ws.addRow(['المعدل العام للإنجاز لجميع المراكز',avg==null?'':Number(fmtScore(avg)),'عدد المراكز المقيمة',`${scored.length}/${TARGET_CENTERS.length}`]);
     footer.eachCell(cell=>{cell.font={name:'Tajawal',bold:true,color:{argb:'FF173C78'},size:12};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFD'}};cell.alignment={horizontal:'center',vertical:'middle'};});
+    ws.addRow([]);
+    const missingTitle=ws.addRow(['المراكز التي لم يتم تقييمها','','العدد',missingCenters().length]);
+    missingTitle.eachCell(cell=>{cell.font={name:'Tajawal',bold:true,color:{argb:'FFD8BF63'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};cell.alignment={horizontal:'center',vertical:'middle'};});
+    const missing=missingCenters();
+    if(missing.length){
+      for(let i=0;i<missing.length;i+=4){
+        ws.addRow([missing[i]||'',missing[i+1]||'',missing[i+2]||'',missing[i+3]||'']);
+      }
+    }else{
+      ws.addRow(['تم تقييم جميع المراكز المحددة','','','']);
+    }
     ws.columns=[{width:16},{width:24},{width:16},{width:24}];
     ws.eachRow((row,idx)=>row.eachCell(cell=>{
       cell.font={...(cell.font||{}),name:'Tajawal',bold:idx===5||idx<=2};
@@ -572,6 +607,10 @@ function exportPDF(){
   }).join('');
   const scored=centerRows.filter(r=>r.score!=null);
   const avg=scored.length?scored.reduce((s,r)=>s+r.score,0)/scored.length:null;
+  const missing=missingCenters();
+  const missingHtml=missing.length
+    ? missing.map(c=>`<span class="missing-center-chip">${c}</span>`).join('')
+    : '<span class="missing-centers-empty">تم تقييم جميع المراكز المحددة</span>';
   document.getElementById('printView').innerHTML=`
     <div class="pdoc">
       <div class="phead">
@@ -586,6 +625,10 @@ function exportPDF(){
       </div>
       ${chartImg?`<img class="pchart" src="${chartImg}" alt="مخطط دائري لعناصر الاستمارات">`:''}
       <table class="ptable"><thead><tr><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th></tr></thead><tbody>${rows}</tbody></table>
+      <div style="margin-top:12px;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">
+        <div style="background:#173C78;color:#D8BF63;font-weight:800;text-align:center;padding:5px;-webkit-print-color-adjust:exact;print-color-adjust:exact">المراكز التي لم يتم تقييمها (${missing.length})</div>
+        <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center">${missingHtml}</div>
+      </div>
     </div>`;
   const printNow = () => setTimeout(()=>window.print(), 120);
   const printChart = document.querySelector('#printView .pchart');
