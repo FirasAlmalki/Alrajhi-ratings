@@ -63,6 +63,17 @@ body{background:#F6F8FB;color:#102A4C}
 .rank-table tr:nth-child(even) td{background:#F8FAFD}
 .rank-table td.question{text-align:right;min-width:320px;line-height:1.45;color:var(--ink);font-weight:600}
 .rank-table td.template{color:var(--muted);min-width:170px}
+.center-score-panel{margin-bottom:16px}
+.center-score-sub{font-size:.76rem;font-weight:600;color:#DDE7F7}
+.center-table-wrap{overflow:auto}
+.center-score-table{width:100%;border-collapse:collapse;font-size:.9rem}
+.center-score-table th{background:var(--navy);color:var(--gold);border:1px solid #2B5594;padding:7px 10px;text-align:center;font-weight:800;white-space:nowrap}
+.center-score-table td{background:#fff;border:1px solid var(--line);padding:5px 10px;text-align:center;color:var(--ink);font-weight:700}
+.center-score-table tr:nth-child(even) td{background:#F8FAFD}
+.center-score-table td.empty-score{color:#9AA3AF;background:#FBFCFE}
+.center-score-footer{border-top:3px solid var(--gold);background:linear-gradient(180deg,#FFFFFF 0%,#F8FAFD 100%);padding:13px 16px;text-align:center}
+.center-score-footer span{display:block;font-size:.86rem;color:var(--navy);font-weight:800}
+.center-score-footer strong{display:block;margin-top:5px;font-size:2rem;line-height:1;color:var(--navy)}
 .pill{display:inline-flex;align-items:center;justify-content:center;min-width:48px;border-radius:999px;padding:3px 9px;font-weight:800}
 .pill-no{background:#FBE7E7;color:var(--danger);border:1px solid #F0B9B9}
 .pill-rate{background:#EEF4FF;color:var(--navy);border:1px solid #C8D8F2}
@@ -122,6 +133,17 @@ body{background:#F6F8FB;color:#102A4C}
         <button class="export-btn" id="excelBtn" onclick="exportExcel()">تصدير Excel</button>
       </div>
       <div class="kpi-row" id="kpiRow"></div>
+      <div class="panel center-score-panel">
+        <div class="panel-hdr">
+          <span>تقييم المراكز حسب اسم المركز</span>
+          <span class="center-score-sub">المقارنة الأساسية للمراكز المحددة</span>
+        </div>
+        <div class="center-table-wrap"><table class="center-score-table" id="centerScoreTable"></table></div>
+        <div class="center-score-footer">
+          <span>المعدل العام للإنجاز لجميع المراكز</span>
+          <strong id="centerScoreAvg">—</strong>
+        </div>
+      </div>
       <div class="layout">
         <div class="panel">
           <div class="panel-hdr">الأسئلة الأكثر حصولاً على إجابة "لا"</div>
@@ -157,8 +179,11 @@ const META_KEYS = new Set([
 ]);
 const QUESTION_KEYS = ['اسم العنصر','السؤال','سؤال','العنصر','البند','العبارة','question','Question','item','Item'];
 const ANSWER_KEYS = ['التقييم','الإجابة','الاجابة','الإجابه','الإجابة المختارة','الاجابة المختارة','answer','Answer','value','Value'];
+const TARGET_CENTERS = [
+  101,102,103,105,106,107,108,109,110,112,113,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,150,151,152,153
+];
 
-let rawRows=[], filteredRows=[], summaryRows=[], chart=null, chartLarge=null;
+let rawRows=[], filteredRows=[], summaryRows=[], centerRows=[], chart=null, chartLarge=null;
 
 function parseDate(s){
   if(!s) return null;
@@ -176,6 +201,30 @@ function fmtDate(s){
 }
 function rowDate(row){ return row['تاريخ الزيارة'] || row['تاريخ التقييم'] || row['التاريخ'] || ''; }
 function rowCenter(row){ return row['اسم المركز'] || row['فريق الضيافة'] || ''; }
+function centerNumber(row){
+  const center=rowCenter(row);
+  const inParens=String(center).match(/\((\d{2,4})\)/);
+  if(inParens) return Number(inParens[1]);
+  const anyNumber=String(center).match(/\d{2,4}/);
+  return anyNumber?Number(anyNumber[0]):null;
+}
+function scoreValue(row){
+  const raw=row['تقييم النموذج/100'] ?? row['النسبة %'] ?? row['النسبة'];
+  if(raw==null || raw==='') return null;
+  const n=Number(String(raw).replace('%','').trim());
+  if(!Number.isFinite(n)) return null;
+  return n<=1?n*100:n;
+}
+function assessmentKey(row){
+  const key=row['#'] ?? row.ID ?? row.id;
+  if(key!=null && key!=='') return String(key);
+  const unique=String(row.unique_key||'');
+  if(unique) return unique.split('-')[0];
+  return [rowCenter(row),rowDate(row),row['اسم القالب']||'',row['الموظف']||'',scoreValue(row)??''].join('|');
+}
+function formsCount(rows){
+  return new Set(rows.map(assessmentKey).filter(Boolean)).size;
+}
 function norm(v){
   return String(v??'').trim().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ـ/g,'').replace(/\s+/g,' ').toLowerCase();
 }
@@ -266,9 +315,31 @@ function summarize(rows){
     .map(x=>({...x, rate:x.total?x.no/x.total:0, centersCount:x.centers.size, locationsText:[...x.locations].join('، ')}))
     .sort((a,b)=>b.no-a.no || b.rate-a.rate || String(a.question).localeCompare(String(b.question),'ar'));
 }
+function summarizeCenters(rows){
+  const map=new Map();
+  rows.forEach(row=>{
+    const center=centerNumber(row);
+    const score=scoreValue(row);
+    if(!TARGET_CENTERS.includes(center) || score==null) return;
+    if(!map.has(center)) map.set(center,new Map());
+    map.get(center).set(assessmentKey(row),score);
+  });
+  return TARGET_CENTERS.map(center=>{
+    const scores=[...(map.get(center)?.values() || [])];
+    const score=scores.length?scores.reduce((s,v)=>s+v,0)/scores.length:null;
+    return {center,score,count:scores.length};
+  });
+}
+function fmtScore(n){
+  if(n==null) return '';
+  const rounded=Math.round(n*10)/10;
+  return Number.isInteger(rounded)?String(rounded):rounded.toFixed(1);
+}
 function renderAll(){
   summaryRows=summarize(filteredRows);
+  centerRows=summarizeCenters(filteredRows);
   renderKpis();
+  renderCenterComparison();
   renderTable();
   renderChart();
 }
@@ -276,11 +347,33 @@ function renderKpis(){
   const totalAnswers=summaryRows.reduce((s,r)=>s+r.total,0);
   const totalNo=summaryRows.reduce((s,r)=>s+r.no,0);
   const top=summaryRows[0];
+  const centersWithScores=centerRows.filter(r=>r.score!=null);
   document.getElementById('kpiRow').innerHTML=`
     <div class="kpi dark"><div class="kpi-lbl">إجمالي إجابات لا</div><div class="kpi-val">${totalNo}</div></div>
     <div class="kpi"><div class="kpi-lbl">عدد الأسئلة التي ظهر فيها لا</div><div class="kpi-val">${summaryRows.length}</div></div>
     <div class="kpi"><div class="kpi-lbl">نسبة لا من إجابات نعم/لا</div><div class="kpi-val">${totalAnswers?Math.round(totalNo/totalAnswers*100):0}%</div></div>
+    <div class="kpi"><div class="kpi-lbl">المراكز المقيمة من القائمة</div><div class="kpi-val">${centersWithScores.length}/${TARGET_CENTERS.length}</div></div>
     <div class="kpi"><div class="kpi-lbl">أعلى سؤال</div><div class="kpi-val" style="font-size:1.05rem;line-height:1.45">${top?esc(top.question).slice(0,80):'—'}</div></div>`;
+}
+function renderCenterComparison(){
+  const split=Math.ceil(centerRows.length/2);
+  const left=centerRows.slice(0,split);
+  const right=centerRows.slice(split);
+  const rows=left.map((a,i)=>{
+    const b=right[i];
+    return `<tr>
+      <td>${a.center}</td>
+      <td class="${a.score==null?'empty-score':''}">${fmtScore(a.score)}</td>
+      <td>${b?b.center:''}</td>
+      <td class="${!b||b.score==null?'empty-score':''}">${b?fmtScore(b.score):''}</td>
+    </tr>`;
+  }).join('');
+  const scored=centerRows.filter(r=>r.score!=null);
+  const avg=scored.length?scored.reduce((s,r)=>s+r.score,0)/scored.length:null;
+  document.getElementById('centerScoreTable').innerHTML=`
+    <thead><tr><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th></tr></thead>
+    <tbody>${rows}</tbody>`;
+  document.getElementById('centerScoreAvg').textContent=avg==null?'—':fmtScore(avg);
 }
 function renderTable(){
   const rows=summaryRows.map((r,i)=>`<tr>
@@ -405,71 +498,94 @@ async function imageToBase64(url){
   return await new Promise(resolve=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.readAsDataURL(blob);});
 }
 async function exportExcel(){
-  if(!summaryRows.length){alert('لا توجد بيانات للتصدير');return;}
   const btn=document.getElementById('excelBtn'), old=btn.textContent;
   btn.disabled=true; btn.textContent='جاري التصدير...';
   try{
     const wb=new ExcelJS.Workbook();
     wb.creator='Al Rajhi'; wb.views=[{rightToLeft:true}];
-    const ws=wb.addWorksheet('تقرير عناصر الاستمارات',{views:[{rightToLeft:true,state:'frozen',ySplit:5}]});
-    ws.mergeCells('A1:I2');
+    const ws=wb.addWorksheet('مقارنة المراكز',{views:[{rightToLeft:true,state:'frozen',ySplit:5}],properties:{defaultRowHeight:22}});
+    ws.mergeCells('A1:D2');
     const title=ws.getCell('A1');
-    title.value='تقرير عناصر الاستمارات - إجابات لا الأكثر تكراراً';
+    title.value='تقييم المراكز من اسم المركز';
     title.font={name:'Tajawal',bold:true,size:15,color:{argb:'FFFFFFFF'}};
     title.alignment={horizontal:'center',vertical:'middle'};
     title.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};
     ws.getRow(1).height=32;
     ws.getRow(2).height=32;
     for(let r=1;r<=2;r++){
-      for(let c=1;c<=2;c++){
+      for(let c=1;c<=4;c++){
         ws.getCell(r,c).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};
       }
     }
     try{
       const logo=await imageToBase64('/Alrajhi.png');
       const logoId=wb.addImage({base64:logo,extension:'png'});
-      ws.addImage(logoId,{tl:{col:0.15,row:0.18},ext:{width:118,height:58},editAs:'oneCell'});
+      ws.addImage(logoId,{tl:{col:0.08,row:0.14},ext:{width:104,height:52},editAs:'oneCell'});
     }catch{}
     ws.addRow([]);
-    ws.addRow(['تاريخ التصدير',new Date().toLocaleString('ar-SA'),'عدد السجلات',filteredRows.length,'إجمالي لا',summaryRows.reduce((s,r)=>s+r.no,0)]);
-    ws.addRow(['#','السؤال','الاستمارة','لا','نعم','الإجمالي','نسبة لا','عدد المراكز','المواقع']);
+    const scored=centerRows.filter(r=>r.score!=null);
+    const avg=scored.length?scored.reduce((s,r)=>s+r.score,0)/scored.length:null;
+    ws.addRow(['تاريخ التصدير',new Date().toLocaleString('ar-SA'),'عدد الاستمارات',formsCount(filteredRows)]);
+    ws.addRow(['رقم المركز','نتيجة تقييم المراقبة','رقم المركز','نتيجة تقييم المراقبة']);
     const hdr=ws.getRow(5);
     hdr.eachCell(c=>{c.font={name:'Tajawal',bold:true,color:{argb:'FFD8BF63'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};c.alignment={horizontal:'center'};});
-    summaryRows.forEach((r,i)=>ws.addRow([i+1,r.question,r.template,r.no,r.yes,r.total,Math.round(r.rate*100)+'%',r.centersCount,r.locationsText]));
-    ws.columns=[{width:6},{width:60},{width:34},{width:10},{width:10},{width:12},{width:12},{width:12},{width:26}];
-    ws.eachRow((row,idx)=>row.eachCell(c=>{c.font={...(c.font||{}),name:'Tajawal'};c.alignment={vertical:'middle',horizontal:idx>=6?'center':'center',wrapText:true};c.border={top:{style:'thin',color:{argb:'FFD9E1EF'}},left:{style:'thin',color:{argb:'FFD9E1EF'}},bottom:{style:'thin',color:{argb:'FFD9E1EF'}},right:{style:'thin',color:{argb:'FFD9E1EF'}}};}));
-    const img=chart?.toBase64Image();
-    if(img){
-      const chartId=wb.addImage({base64:img,extension:'png'});
-      ws.addImage(chartId,{tl:{col:1,row:summaryRows.length+8},ext:{width:560,height:360},editAs:'oneCell'});
-    }
+    const split=Math.ceil(centerRows.length/2);
+    centerRows.slice(0,split).forEach((a,i)=>{
+      const b=centerRows.slice(split)[i];
+      ws.addRow([
+        a.center,
+        a.score==null?'':Number(fmtScore(a.score)),
+        b?b.center:'',
+        b&&b.score!=null?Number(fmtScore(b.score)):''
+      ]);
+    });
+    ws.addRow([]);
+    const footer=ws.addRow(['المعدل العام للإنجاز لجميع المراكز',avg==null?'':Number(fmtScore(avg)),'عدد المراكز المقيمة',`${scored.length}/${TARGET_CENTERS.length}`]);
+    footer.eachCell(cell=>{cell.font={name:'Tajawal',bold:true,color:{argb:'FF173C78'},size:12};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFD'}};cell.alignment={horizontal:'center',vertical:'middle'};});
+    ws.columns=[{width:16},{width:24},{width:16},{width:24}];
+    ws.eachRow((row,idx)=>row.eachCell(cell=>{
+      cell.font={...(cell.font||{}),name:'Tajawal',bold:idx===5||idx<=2};
+      cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+      cell.border={top:{style:'thin',color:{argb:'FFD9E1EF'}},left:{style:'thin',color:{argb:'FFD9E1EF'}},bottom:{style:'thin',color:{argb:'FFD9E1EF'}},right:{style:'thin',color:{argb:'FFD9E1EF'}}};
+      if(idx===5){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};cell.font={name:'Tajawal',bold:true,color:{argb:'FFD8BF63'}};}
+      else if(idx>5 && idx<footer.number && idx%2===0){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFD'}};}
+    }));
     const buf=await wb.xlsx.writeBuffer();
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-    a.download=`تقرير_عناصر_الاستمارات_${new Date().toISOString().slice(0,10)}.xlsx`;
+    a.download=`مقارنة_تقييم_المراكز_${new Date().toISOString().slice(0,10)}.xlsx`;
     a.click(); URL.revokeObjectURL(a.href);
   }finally{btn.disabled=false;btn.textContent=old;}
 }
 function exportPDF(){
-  if(!summaryRows.length){alert('لا توجد بيانات للتصدير');return;}
-  const totalNo=summaryRows.reduce((s,r)=>s+r.no,0);
   chart?.update('none');
   const chartImg=chart?.toBase64Image()||'';
-  const rows=summaryRows.slice(0,25).map((r,i)=>`<tr><td>${i+1}</td><td class="q">${esc(r.question)}</td><td>${esc(r.template)}</td><td>${r.no}</td><td>${r.yes}</td><td>${r.total}</td><td>${Math.round(r.rate*100)}%</td></tr>`).join('');
+  const split=Math.ceil(centerRows.length/2);
+  const left=centerRows.slice(0,split);
+  const right=centerRows.slice(split);
+  const rows=left.map((a,i)=>{
+    const b=right[i];
+    return `<tr>
+      <td>${a.center}</td><td>${fmtScore(a.score)||'&nbsp;'}</td>
+      <td>${b?b.center:''}</td><td>${b?(fmtScore(b.score)||'&nbsp;'):''}</td>
+    </tr>`;
+  }).join('');
+  const scored=centerRows.filter(r=>r.score!=null);
+  const avg=scored.length?scored.reduce((s,r)=>s+r.score,0)/scored.length:null;
   document.getElementById('printView').innerHTML=`
     <div class="pdoc">
       <div class="phead">
         <div class="pbrand"><img src="/Alrajhi.png" alt="Al Rajhi"></div>
-        <div><div class="ptitle">تقرير عناصر الاستمارات</div><div class="psub">ترتيب الأسئلة حسب أعلى إجابات لا</div></div>
+        <div><div class="ptitle">تقييم المراكز من اسم المركز</div><div class="psub">المقارنة الأساسية للمراكز المحددة</div></div>
         <div class="pmeta">${new Date().toLocaleString('ar-SA')}</div>
       </div>
       <div class="pkpis">
-        <div class="pkpi"><span>السجلات</span><strong>${filteredRows.length}</strong></div>
-        <div class="pkpi"><span>إجابات لا</span><strong>${totalNo}</strong></div>
-        <div class="pkpi"><span>الأسئلة</span><strong>${summaryRows.length}</strong></div>
+        <div class="pkpi"><span>عدد الاستمارات</span><strong>${formsCount(filteredRows)}</strong></div>
+        <div class="pkpi"><span>المراكز المقيمة</span><strong>${scored.length}/${TARGET_CENTERS.length}</strong></div>
+        <div class="pkpi"><span>المعدل العام</span><strong>${avg==null?'—':fmtScore(avg)}</strong></div>
       </div>
-      ${chartImg?`<img class="pchart" src="${chartImg}" alt="مخطط دائري لإجابات لا">`:''}
-      <table class="ptable"><thead><tr><th>#</th><th>السؤال</th><th>الاستمارة</th><th>لا</th><th>نعم</th><th>الإجمالي</th><th>نسبة لا</th></tr></thead><tbody>${rows}</tbody></table>
+      ${chartImg?`<img class="pchart" src="${chartImg}" alt="مخطط دائري لعناصر الاستمارات">`:''}
+      <table class="ptable"><thead><tr><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th></tr></thead><tbody>${rows}</tbody></table>
     </div>`;
   const printNow = () => setTimeout(()=>window.print(), 120);
   const printChart = document.querySelector('#printView .pchart');
