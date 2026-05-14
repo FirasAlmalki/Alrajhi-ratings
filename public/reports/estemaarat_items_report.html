@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تقرير عناصر الاستمارات</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Tajawal','Segoe UI',Tahoma,Arial,sans-serif;direction:rtl}
+body{background:#F6F8FB;color:#102A4C}
+:root{--navy:#173C78;--navy2:#0C2550;--gold:#D8BF63;--gold2:#B99B35;--ink:#102A4C;--muted:#62718A;--line:#D9E1EF;--card:#fff;--danger:#B83232;--green:#268A5B}
+.phdr{background:#fff;border-bottom:4px solid var(--gold);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 2px 12px rgba(16,42,76,.08)}
+.brand-mark{background:var(--navy);border:1px solid var(--gold);border-radius:10px;padding:8px 12px;display:flex;align-items:center;justify-content:center;min-width:150px}
+.brand-mark img{height:58px;width:auto;object-fit:contain}
+.phdr-title{text-align:center;flex:1}
+.phdr-title h1{font-size:1.35rem;font-weight:800;color:var(--navy);letter-spacing:0}
+.phdr-title div{font-size:.78rem;color:var(--muted);margin-top:3px}
+.phdr-date{font-size:.72rem;color:var(--navy);text-align:left;line-height:1.6}
+.fbar{background:#fff;border-bottom:1px solid var(--line);padding:13px 28px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.fgrp{display:flex;flex-direction:column;gap:4px}
+.flbl{font-size:.72rem;color:var(--navy);font-weight:700}
+.finp{background:#F9FBFE;border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-family:inherit;font-size:.82rem;color:var(--ink);outline:none;min-width:135px}
+.finp:focus{border-color:var(--gold2);box-shadow:0 0 0 3px rgba(216,191,99,.18)}
+.fbtn,.export-btn{border-radius:8px;font-family:inherit;font-size:.83rem;font-weight:800;cursor:pointer;transition:background .15s,border-color .15s}
+.fbtn{padding:8px 18px;border:none}
+.fapply{background:var(--gold);color:var(--navy2)}
+.fapply:hover{background:var(--gold2)}
+.fclear{background:#EDF2FA;color:var(--navy);border:1px solid var(--line)}
+.main{max-width:1380px;margin:0 auto;padding:22px 24px 40px}
+.loading{text-align:center;padding:60px;color:var(--muted);font-size:1rem}
+.export-row{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.export-btn{background:var(--navy);color:#fff;border:2px solid var(--navy);padding:9px 18px}
+.export-btn.gold{background:var(--gold);border-color:var(--gold);color:var(--navy2)}
+.export-btn:hover{background:var(--navy2);border-color:var(--navy2);color:#fff}
+.export-btn:disabled{opacity:.55;cursor:not-allowed}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:12px;padding:16px 18px;box-shadow:0 6px 20px rgba(16,42,76,.06)}
+.kpi.dark{background:var(--navy);border-color:var(--navy);border-top-color:var(--gold);color:#fff}
+.kpi-lbl{font-size:.76rem;color:var(--muted);font-weight:700}
+.kpi.dark .kpi-lbl{color:#DDE7F7}
+.kpi-val{font-size:2.05rem;font-weight:800;color:var(--navy);margin-top:5px;line-height:1}
+.kpi.dark .kpi-val{color:var(--gold)}
+.layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr);gap:16px;align-items:start}
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 20px rgba(16,42,76,.06);overflow:hidden}
+.panel-hdr{background:var(--navy);color:#fff;padding:11px 16px;font-size:.9rem;font-weight:800;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-body{padding:16px}
+.chart-wrap{height:430px;position:relative}
+.panel-action{background:rgba(216,191,99,.16);border:1px solid rgba(216,191,99,.45);color:var(--gold);border-radius:7px;padding:5px 11px;font-family:inherit;font-size:.72rem;font-weight:800;cursor:pointer}
+.panel-action:hover{background:rgba(216,191,99,.28)}
+.chart-modal{position:fixed;inset:0;background:rgba(12,37,80,.78);z-index:900;display:none;align-items:center;justify-content:center;padding:22px}
+.chart-modal.open{display:flex}
+.chart-modal-box{background:#fff;border:1px solid var(--line);border-radius:14px;width:min(1180px,96vw);height:min(780px,92vh);display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(16,42,76,.35)}
+.chart-modal-hdr{background:var(--navy);color:#fff;border-bottom:4px solid var(--gold);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:14px 14px 0 0;font-weight:800}
+.chart-modal-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:7px;padding:5px 12px;font-family:inherit;font-weight:800;cursor:pointer}
+.chart-modal-body{flex:1;padding:18px;min-height:0}
+.chart-modal-body canvas{width:100%!important;height:100%!important}
+.table-wrap{overflow:auto;max-height:620px}
+.rank-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.rank-table th{position:sticky;top:0;background:var(--navy);color:var(--gold);padding:9px 10px;border:1px solid #2B5594;text-align:center;white-space:nowrap;z-index:1}
+.rank-table td{padding:8px 10px;border:1px solid var(--line);text-align:center;vertical-align:middle;background:#fff}
+.rank-table tr:nth-child(even) td{background:#F8FAFD}
+.rank-table td.question{text-align:right;min-width:320px;line-height:1.45;color:var(--ink);font-weight:600}
+.rank-table td.template{color:var(--muted);min-width:170px}
+.pill{display:inline-flex;align-items:center;justify-content:center;min-width:48px;border-radius:999px;padding:3px 9px;font-weight:800}
+.pill-no{background:#FBE7E7;color:var(--danger);border:1px solid #F0B9B9}
+.pill-rate{background:#EEF4FF;color:var(--navy);border:1px solid #C8D8F2}
+.empty{padding:36px;text-align:center;color:var(--muted)}
+.print-only{display:none}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.phdr{padding:12px 16px}.brand-mark{min-width:112px;padding:6px 8px}.brand-mark img{height:42px}.fbar{padding:12px 16px}.main{padding:16px 12px}.chart-wrap{height:340px}.chart-modal{padding:10px}.chart-modal-box{height:88vh}}
+@media print{
+  body{background:#fff;color:#111}
+  .no-print{display:none!important}
+  .print-only{display:block!important}
+  @page{size:A4;margin:12mm}
+  .pdoc{font-family:'Tajawal',Arial,sans-serif;direction:rtl;color:#111}
+  .phead{display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #D8BF63;padding-bottom:10px;margin-bottom:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pbrand{background:#173C78!important;border:1px solid #D8BF63;border-radius:6px;padding:6px 9px;display:flex;align-items:center;justify-content:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pbrand img{height:48px;width:auto}
+  .ptitle{text-align:center;color:#173C78;font-size:16pt;font-weight:800}
+  .psub{font-size:8.5pt;color:#555;margin-top:3px}
+  .pmeta{font-size:8.5pt;color:#333;text-align:left}
+  .pkpis{display:flex;gap:8px;margin-bottom:12px}
+  .pkpi{flex:1;border:1px solid #D9E1EF;border-top:3px solid #D8BF63;padding:7px;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pkpi strong{display:block;color:#173C78;font-size:14pt}
+  .pchart{display:block;width:72%;max-height:250px;object-fit:contain;border:1px solid #D9E1EF;margin:0 auto 12px}
+  .ptable{width:100%;border-collapse:collapse;font-size:7.8pt}
+  .ptable th{background:#173C78!important;color:#D8BF63;border:1px solid #173C78;padding:4px;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .ptable td{border:1px solid #bbb;padding:4px;text-align:center}
+  .ptable td.q{text-align:right}
+  .ptable tr:nth-child(even) td{background:#f6f6f6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <div class="phdr">
+    <div class="brand-mark"><img src="/Alrajhi.png" alt="Al Rajhi"></div>
+    <div class="phdr-title">
+      <h1>تقرير عناصر الاستمارات</h1>
+      <div>ترتيب الأسئلة حسب أعلى إجابات "لا"</div>
+    </div>
+    <div class="phdr-date" id="hdrDate"></div>
+  </div>
+
+  <div class="fbar">
+    <div class="fgrp"><div class="flbl">من تاريخ</div><input type="date" class="finp" id="fFrom"></div>
+    <div class="fgrp"><div class="flbl">إلى تاريخ</div><input type="date" class="finp" id="fTo"></div>
+    <div class="fgrp"><div class="flbl">اسم الاستمارة</div><select class="finp" id="fTemplate"><option value="">— الكل —</option></select></div>
+    <div class="fgrp"><div class="flbl">الموقع</div><select class="finp" id="fLoc"><option value="">— الكل —</option></select></div>
+    <div class="fgrp"><div class="flbl">مركز الضيافة</div><select class="finp" id="fCenter"><option value="">— الكل —</option></select></div>
+    <button class="fbtn fapply" onclick="applyFilter()">تطبيق</button>
+    <button class="fbtn fclear" onclick="clearFilter()">مسح</button>
+  </div>
+
+  <div class="main">
+    <div id="loadMsg" class="loading">جاري تحميل بيانات عناصر الاستمارات...</div>
+    <div id="dash" style="display:none">
+      <div class="export-row">
+        <button class="export-btn gold" onclick="exportPDF()">تصدير PDF</button>
+        <button class="export-btn" id="excelBtn" onclick="exportExcel()">تصدير Excel</button>
+      </div>
+      <div class="kpi-row" id="kpiRow"></div>
+      <div class="layout">
+        <div class="panel">
+          <div class="panel-hdr">الأسئلة الأكثر حصولاً على إجابة "لا"</div>
+          <div class="table-wrap"><table class="rank-table" id="rankTable"></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-hdr">
+            <span>الرسم البياني لأعلى العناصر</span>
+            <button class="panel-action" onclick="openChartModal()">تكبير المخطط</button>
+          </div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="noChart"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="chart-modal" id="chartModal" onclick="if(event.target===this)closeChartModal()">
+    <div class="chart-modal-box">
+      <div class="chart-modal-hdr">
+        <span>الرسم البياني لأعلى عناصر الاستمارات</span>
+        <button class="chart-modal-close" onclick="closeChartModal()">إغلاق</button>
+      </div>
+      <div class="chart-modal-body"><canvas id="noChartLarge"></canvas></div>
+    </div>
+  </div>
+</div>
+<div class="print-only" id="printView"></div>
+
+<script>
+const WEBHOOK = 'https://n8n.thelpw.com/webhook/estimaratitemsreport';
+const META_KEYS = new Set([
+  'row_number','unique_key','#','ID','id','اسم القالب','فريق الضيافة','اسم المركز','الموقع','التاريخ','تاريخ الزيارة','تاريخ التقييم',
+  'النسبة','النسبة %','تقييم النموذج/100','رقم السؤال','timestamp','Timestamp','ملاحظات','الملاحظات','ملاحظة','الاسم','اسم المستخدم','الموظف','المشرف','القسم'
+]);
+const QUESTION_KEYS = ['اسم العنصر','السؤال','سؤال','العنصر','البند','العبارة','question','Question','item','Item'];
+const ANSWER_KEYS = ['التقييم','الإجابة','الاجابة','الإجابه','الإجابة المختارة','الاجابة المختارة','answer','Answer','value','Value'];
+
+let rawRows=[], filteredRows=[], summaryRows=[], chart=null, chartLarge=null;
+
+function parseDate(s){
+  if(!s) return null;
+  const d=String(s).trim().split(' ')[0];
+  const p=d.split('/');
+  if(p.length===3) return `${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
+  if(/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0,10);
+  return null;
+}
+function fmtDate(s){
+  const d=parseDate(s);
+  if(!d) return s||'—';
+  const [y,m,dd]=d.split('-');
+  return `${dd}/${m}/${y}`;
+}
+function rowDate(row){ return row['تاريخ الزيارة'] || row['تاريخ التقييم'] || row['التاريخ'] || ''; }
+function rowCenter(row){ return row['اسم المركز'] || row['فريق الضيافة'] || ''; }
+function norm(v){
+  return String(v??'').trim().replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ـ/g,'').replace(/\s+/g,' ').toLowerCase();
+}
+function isNo(v){ const n=norm(v); return n==='لا' || n==='كلا' || n==='no'; }
+function isYes(v){ const n=norm(v); return n==='نعم' || n==='اي' || n==='yes'; }
+function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function findKey(row, keys){ return keys.find(k=>Object.prototype.hasOwnProperty.call(row,k)); }
+function unique(rows,key){ return [...new Set(rows.map(r=>r[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'ar')); }
+function uniqueBy(rows,getter){ return [...new Set(rows.map(getter).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'ar')); }
+
+async function loadData(){
+  const r=await fetch(WEBHOOK);
+  if(!r.ok) throw new Error('fetch failed');
+  const d=await r.json();
+  return Array.isArray(d)?d:[d];
+}
+
+(async function init(){
+  document.getElementById('hdrDate').textContent = new Date().toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'});
+  try{
+    rawRows = await loadData();
+    filteredRows = [...rawRows];
+  }catch(e){
+    document.getElementById('loadMsg').textContent='تعذر تحميل بيانات التقرير.';
+    return;
+  }
+  fillSelect('fTemplate', unique(rawRows,'اسم القالب'));
+  fillSelect('fLoc', unique(rawRows,'الموقع'));
+  fillSelect('fCenter', uniqueBy(rawRows,rowCenter));
+  document.getElementById('loadMsg').style.display='none';
+  document.getElementById('dash').style.display='block';
+  renderAll();
+})();
+
+function fillSelect(id, values){
+  const sel=document.getElementById(id);
+  values.forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;sel.appendChild(o);});
+}
+function applyFilter(){
+  const from=document.getElementById('fFrom').value;
+  const to=document.getElementById('fTo').value;
+  const template=document.getElementById('fTemplate').value;
+  const loc=document.getElementById('fLoc').value;
+  const center=document.getElementById('fCenter').value;
+  filteredRows=rawRows.filter(r=>{
+    const d=parseDate(rowDate(r));
+    if(from&&d&&d<from) return false;
+    if(to&&d&&d>to) return false;
+    if(template&&r['اسم القالب']!==template) return false;
+    if(loc&&r['الموقع']!==loc) return false;
+    if(center&&rowCenter(r)!==center) return false;
+    return true;
+  });
+  renderAll();
+}
+function clearFilter(){
+  ['fFrom','fTo','fTemplate','fLoc','fCenter'].forEach(id=>document.getElementById(id).value='');
+  filteredRows=[...rawRows];
+  renderAll();
+}
+
+function rowResponses(row){
+  const qKey=findKey(row,QUESTION_KEYS);
+  const aKey=findKey(row,ANSWER_KEYS);
+  if(qKey&&aKey&&row[qKey]) return [{question:row[qKey], answer:row[aKey]}];
+  return Object.keys(row)
+    .filter(k=>!META_KEYS.has(k) && !QUESTION_KEYS.includes(k) && !ANSWER_KEYS.includes(k))
+    .map(k=>({question:k, answer:row[k]}))
+    .filter(x=>isNo(x.answer)||isYes(x.answer));
+}
+function summarize(rows){
+  const map=new Map();
+  rows.forEach(row=>{
+    const template=row['اسم القالب']||'—';
+    rowResponses(row).forEach(({question,answer})=>{
+      const key=`${template}|||${question}`;
+      if(!map.has(key)) map.set(key,{template,question,no:0,yes:0,total:0,centers:new Set(),locations:new Set()});
+      const item=map.get(key);
+      if(isNo(answer)) item.no++;
+      if(isYes(answer)) item.yes++;
+      if(isNo(answer)||isYes(answer)) item.total++;
+      if(rowCenter(row)) item.centers.add(rowCenter(row));
+      if(row['الموقع']) item.locations.add(row['الموقع']);
+    });
+  });
+  return [...map.values()]
+    .filter(x=>x.no>0)
+    .map(x=>({...x, rate:x.total?x.no/x.total:0, centersCount:x.centers.size, locationsText:[...x.locations].join('، ')}))
+    .sort((a,b)=>b.no-a.no || b.rate-a.rate || String(a.question).localeCompare(String(b.question),'ar'));
+}
+function renderAll(){
+  summaryRows=summarize(filteredRows);
+  renderKpis();
+  renderTable();
+  renderChart();
+}
+function renderKpis(){
+  const totalAnswers=summaryRows.reduce((s,r)=>s+r.total,0);
+  const totalNo=summaryRows.reduce((s,r)=>s+r.no,0);
+  const top=summaryRows[0];
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi dark"><div class="kpi-lbl">إجمالي إجابات لا</div><div class="kpi-val">${totalNo}</div></div>
+    <div class="kpi"><div class="kpi-lbl">عدد الأسئلة التي ظهر فيها لا</div><div class="kpi-val">${summaryRows.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">نسبة لا من إجابات نعم/لا</div><div class="kpi-val">${totalAnswers?Math.round(totalNo/totalAnswers*100):0}%</div></div>
+    <div class="kpi"><div class="kpi-lbl">أعلى سؤال</div><div class="kpi-val" style="font-size:1.05rem;line-height:1.45">${top?esc(top.question).slice(0,80):'—'}</div></div>`;
+}
+function renderTable(){
+  const rows=summaryRows.map((r,i)=>`<tr>
+    <td>${i+1}</td>
+    <td class="question">${esc(r.question)}</td>
+    <td class="template">${esc(r.template)}</td>
+    <td><span class="pill pill-no">${r.no}</span></td>
+    <td>${r.yes}</td>
+    <td>${r.total}</td>
+    <td><span class="pill pill-rate">${Math.round(r.rate*100)}%</span></td>
+    <td>${r.centersCount}</td>
+    <td>${esc(r.locationsText||'—')}</td>
+  </tr>`).join('');
+  document.getElementById('rankTable').innerHTML=summaryRows.length?`
+    <thead><tr><th>#</th><th>السؤال</th><th>الاستمارة</th><th>لا</th><th>نعم</th><th>الإجمالي</th><th>نسبة لا</th><th>المراكز</th><th>المواقع</th></tr></thead>
+    <tbody>${rows}</tbody>`:`<tbody><tr><td><div class="empty">لا توجد إجابات "لا" ضمن الفلاتر الحالية</div></td></tr></tbody>`;
+}
+const outsidePieLabels = {
+  id:'outsidePieLabels',
+  afterDatasetsDraw(chart){
+    const meta = chart.getDatasetMeta(0);
+    if(!meta?.data?.length) return;
+    const {ctx, data} = chart;
+    const values = data.datasets[0].data;
+    const total = values.reduce((s,v)=>s+Number(v||0),0);
+    if(!total) return;
+    ctx.save();
+    const labelSize = chart.options.plugins?.outsidePieLabels?.fontSize || 11;
+    const lineLength = chart.options.plugins?.outsidePieLabels?.lineLength || 34;
+    ctx.font = `600 ${labelSize}px Tajawal, Arial`;
+    ctx.strokeStyle = '#B99B35';
+    ctx.fillStyle = '#173C78';
+    ctx.lineWidth = 1.4;
+    meta.data.forEach((arc, i)=>{
+      const value = Number(values[i]||0);
+      if(!value) return;
+      const angle = (arc.startAngle + arc.endAngle) / 2;
+      const label = String(data.labels[i]||'');
+      const pct = Math.round(value / total * 100);
+      const cx = arc.x, cy = arc.y;
+      const outer = arc.outerRadius;
+      const sx = cx + Math.cos(angle) * (outer + 4);
+      const sy = cy + Math.sin(angle) * (outer + 4);
+      const mx = cx + Math.cos(angle) * (outer + 22);
+      const my = cy + Math.sin(angle) * (outer + 22);
+      const rightSide = Math.cos(angle) >= 0;
+      const ex = mx + (rightSide ? lineLength : -lineLength);
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(mx, my);
+      ctx.lineTo(ex, my);
+      ctx.stroke();
+      ctx.textAlign = rightSide ? 'left' : 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${label} (${value} - ${pct}%)`, ex + (rightSide ? 5 : -5), my);
+    });
+    ctx.restore();
+  }
+};
+function chartConfig(rows, opts={}){
+  const labelLength = opts.labelLength || 42;
+  const labelSize = opts.labelSize || 11;
+  const sidePadding = opts.sidePadding || 170;
+  return {
+    type:'doughnut',
+    data:{
+      labels:rows.map(r=>r.question.length>labelLength?r.question.slice(0,labelLength)+'...':r.question),
+      datasets:[{
+        label:'عدد لا',
+        data:rows.map(r=>r.no),
+        backgroundColor:['#173C78','#D8BF63','#2E5490','#B99B35','#0C2550','#E8D98F','#62718A','#8AADDA','#D9E1EF'],
+        borderColor:'#FFFFFF',
+        borderWidth:2
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      cutout:'48%',
+      layout:{padding:{left:sidePadding,right:sidePadding,top:18,bottom:18}},
+      plugins:{
+        legend:{display:false},
+        outsidePieLabels:{fontSize:labelSize,lineLength:opts.lineLength||34},
+        tooltip:{rtl:true,textDirection:'rtl',callbacks:{label(ctx){return `${ctx.label}: ${ctx.parsed} لا`;}}}
+      }
+    },
+    plugins:[outsidePieLabels]
+  };
+}
+function chartRowsForSummary(){
+  const top=summaryRows.slice(0,8);
+  const otherNo=summaryRows.slice(8).reduce((s,r)=>s+r.no,0);
+  return otherNo>0?[...top,{question:'أخرى',no:otherNo}]:top;
+}
+function renderChart(){
+  const chartRows=chartRowsForSummary();
+  const ctx=document.getElementById('noChart');
+  if(chart) chart.destroy();
+  chart=new Chart(ctx,chartConfig(chartRows));
+  if(chartLarge){
+    chartLarge.destroy();
+    chartLarge=null;
+    if(document.getElementById('chartModal').classList.contains('open')) renderLargeChart();
+  }
+}
+function renderLargeChart(){
+  const ctx=document.getElementById('noChartLarge');
+  if(chartLarge) chartLarge.destroy();
+  chartLarge=new Chart(ctx,chartConfig(chartRowsForSummary(),{labelLength:72,labelSize:14,sidePadding:260,lineLength:58}));
+}
+function openChartModal(){
+  document.getElementById('chartModal').classList.add('open');
+  setTimeout(renderLargeChart,0);
+}
+function closeChartModal(){
+  document.getElementById('chartModal').classList.remove('open');
+  if(chartLarge){chartLarge.destroy();chartLarge=null;}
+}
+async function imageToBase64(url){
+  const res=await fetch(url);
+  const blob=await res.blob();
+  return await new Promise(resolve=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.readAsDataURL(blob);});
+}
+async function exportExcel(){
+  if(!summaryRows.length){alert('لا توجد بيانات للتصدير');return;}
+  const btn=document.getElementById('excelBtn'), old=btn.textContent;
+  btn.disabled=true; btn.textContent='جاري التصدير...';
+  try{
+    const wb=new ExcelJS.Workbook();
+    wb.creator='Al Rajhi'; wb.views=[{rightToLeft:true}];
+    const ws=wb.addWorksheet('تقرير عناصر الاستمارات',{views:[{rightToLeft:true,state:'frozen',ySplit:5}]});
+    ws.mergeCells('A1:I2');
+    const title=ws.getCell('A1');
+    title.value='تقرير عناصر الاستمارات - إجابات لا الأكثر تكراراً';
+    title.font={name:'Tajawal',bold:true,size:15,color:{argb:'FFFFFFFF'}};
+    title.alignment={horizontal:'center',vertical:'middle'};
+    title.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};
+    ws.getRow(1).height=32;
+    ws.getRow(2).height=32;
+    for(let r=1;r<=2;r++){
+      for(let c=1;c<=2;c++){
+        ws.getCell(r,c).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};
+      }
+    }
+    try{
+      const logo=await imageToBase64('/Alrajhi.png');
+      const logoId=wb.addImage({base64:logo,extension:'png'});
+      ws.addImage(logoId,{tl:{col:0.15,row:0.18},ext:{width:118,height:58},editAs:'oneCell'});
+    }catch{}
+    ws.addRow([]);
+    ws.addRow(['تاريخ التصدير',new Date().toLocaleString('ar-SA'),'عدد السجلات',filteredRows.length,'إجمالي لا',summaryRows.reduce((s,r)=>s+r.no,0)]);
+    ws.addRow(['#','السؤال','الاستمارة','لا','نعم','الإجمالي','نسبة لا','عدد المراكز','المواقع']);
+    const hdr=ws.getRow(5);
+    hdr.eachCell(c=>{c.font={name:'Tajawal',bold:true,color:{argb:'FFD8BF63'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};c.alignment={horizontal:'center'};});
+    summaryRows.forEach((r,i)=>ws.addRow([i+1,r.question,r.template,r.no,r.yes,r.total,Math.round(r.rate*100)+'%',r.centersCount,r.locationsText]));
+    ws.columns=[{width:6},{width:60},{width:34},{width:10},{width:10},{width:12},{width:12},{width:12},{width:26}];
+    ws.eachRow((row,idx)=>row.eachCell(c=>{c.font={...(c.font||{}),name:'Tajawal'};c.alignment={vertical:'middle',horizontal:idx>=6?'center':'center',wrapText:true};c.border={top:{style:'thin',color:{argb:'FFD9E1EF'}},left:{style:'thin',color:{argb:'FFD9E1EF'}},bottom:{style:'thin',color:{argb:'FFD9E1EF'}},right:{style:'thin',color:{argb:'FFD9E1EF'}}};}));
+    const img=chart?.toBase64Image();
+    if(img){
+      const chartId=wb.addImage({base64:img,extension:'png'});
+      ws.addImage(chartId,{tl:{col:1,row:summaryRows.length+8},ext:{width:560,height:360},editAs:'oneCell'});
+    }
+    const buf=await wb.xlsx.writeBuffer();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    a.download=`تقرير_عناصر_الاستمارات_${new Date().toISOString().slice(0,10)}.xlsx`;
+    a.click(); URL.revokeObjectURL(a.href);
+  }finally{btn.disabled=false;btn.textContent=old;}
+}
+function exportPDF(){
+  if(!summaryRows.length){alert('لا توجد بيانات للتصدير');return;}
+  const totalNo=summaryRows.reduce((s,r)=>s+r.no,0);
+  chart?.update('none');
+  const chartImg=chart?.toBase64Image()||'';
+  const rows=summaryRows.slice(0,25).map((r,i)=>`<tr><td>${i+1}</td><td class="q">${esc(r.question)}</td><td>${esc(r.template)}</td><td>${r.no}</td><td>${r.yes}</td><td>${r.total}</td><td>${Math.round(r.rate*100)}%</td></tr>`).join('');
+  document.getElementById('printView').innerHTML=`
+    <div class="pdoc">
+      <div class="phead">
+        <div class="pbrand"><img src="/Alrajhi.png" alt="Al Rajhi"></div>
+        <div><div class="ptitle">تقرير عناصر الاستمارات</div><div class="psub">ترتيب الأسئلة حسب أعلى إجابات لا</div></div>
+        <div class="pmeta">${new Date().toLocaleString('ar-SA')}</div>
+      </div>
+      <div class="pkpis">
+        <div class="pkpi"><span>السجلات</span><strong>${filteredRows.length}</strong></div>
+        <div class="pkpi"><span>إجابات لا</span><strong>${totalNo}</strong></div>
+        <div class="pkpi"><span>الأسئلة</span><strong>${summaryRows.length}</strong></div>
+      </div>
+      ${chartImg?`<img class="pchart" src="${chartImg}" alt="مخطط دائري لإجابات لا">`:''}
+      <table class="ptable"><thead><tr><th>#</th><th>السؤال</th><th>الاستمارة</th><th>لا</th><th>نعم</th><th>الإجمالي</th><th>نسبة لا</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+  const printNow = () => setTimeout(()=>window.print(), 120);
+  const printChart = document.querySelector('#printView .pchart');
+  if(printChart && !printChart.complete){
+    printChart.onload = printNow;
+    printChart.onerror = printNow;
+  } else {
+    printNow();
+  }
+}
+</script>
+</body>
+</html>

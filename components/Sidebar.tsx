@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '../context/AppContext';
-import { PHASES, REPORTS } from '../lib/config';
+import { MADAR, PHASES, REPORTS } from '../lib/config';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -30,6 +30,7 @@ export default function Sidebar({ isOpen, onClose, currentPage }: SidebarProps) 
   };
 
   const hasAnyReport = isAdmin || REPORTS.some(r => permissions['report_' + r.key]);
+  const visibleMadar = MADAR.filter(r => isAdmin || permissions['report_' + r.key]);
 
   return (
     <>
@@ -95,7 +96,7 @@ export default function Sidebar({ isOpen, onClose, currentPage }: SidebarProps) 
         </div>
 
         {/* مدار */}
-        {(isAdmin || permissions['report_madar_reports']) && (
+        {visibleMadar.length > 0 && (
           <>
             <div className="sidebar-divider"></div>
             <div className="sidebar-section">
@@ -104,20 +105,15 @@ export default function Sidebar({ isOpen, onClose, currentPage }: SidebarProps) 
                 <span className={`phase-arrow ${madarCollapsed ? 'collapsed' : ''}`}>▼</span>
               </div>
               <div className={`phase-items ${madarCollapsed ? 'collapsed' : ''}`} style={madarCollapsed ? { maxHeight: 0 } : { maxHeight: '500px' }}>
-                <button
-                  className={`sidebar-item sub ${currentPage === 'madar_reports' ? 'active' : ''}`}
-                  onClick={() => navigate('/reports/madar_reports')}
-                >
-                  المحاضر
-                </button>
-                {(isAdmin || permissions['report_estemaarat']) && (
+                {visibleMadar.map(r => (
                   <button
-                    className={`sidebar-item sub ${currentPage === 'estemaarat' ? 'active' : ''}`}
-                    onClick={() => navigate('/reports/estemaarat')}
+                    key={r.key}
+                    className={`sidebar-item sub ${currentPage === r.key ? 'active' : ''}`}
+                    onClick={() => navigate(`/reports/${r.key}`)}
                   >
-                    الاستمارات
+                    {r.label}
                   </button>
-                )}
+                ))}
               </div>
             </div>
           </>
