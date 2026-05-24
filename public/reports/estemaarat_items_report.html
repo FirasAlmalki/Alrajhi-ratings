@@ -91,6 +91,9 @@ body{background:#F6F8FB;color:#102A4C}
   .print-only{display:block!important}
   @page{size:A4;margin:12mm}
   .pdoc{font-family:'Tajawal',Arial,sans-serif;direction:rtl;color:#111}
+  .psection{break-after:page;page-break-after:always}
+  .psection:last-child{break-after:auto;page-break-after:auto}
+  .psection-title{background:#173C78!important;color:#D8BF63;font-size:13pt;font-weight:800;text-align:center;padding:7px;margin:0 0 10px;border-bottom:3px solid #D8BF63;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .phead{display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #D8BF63;padding-bottom:10px;margin-bottom:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pbrand{background:#173C78!important;border:1px solid #D8BF63;border-radius:6px;padding:6px 9px;display:flex;align-items:center;justify-content:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pbrand img{height:48px;width:auto}
@@ -100,7 +103,7 @@ body{background:#F6F8FB;color:#102A4C}
   .pkpis{display:flex;gap:8px;margin-bottom:12px}
   .pkpi{flex:1;border:1px solid #D9E1EF;border-top:3px solid #D8BF63;padding:7px;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pkpi strong{display:block;color:#173C78;font-size:14pt}
-  .pchart{display:block;width:72%;max-height:250px;object-fit:contain;border:1px solid #D9E1EF;margin:0 auto 12px}
+  .pchart{display:block;width:100%;max-height:620px;object-fit:contain;border:1px solid #D9E1EF;margin:0 auto 12px}
   .ptable{width:100%;border-collapse:collapse;font-size:7.8pt}
   .ptable th{background:#173C78!important;color:#D8BF63;border:1px solid #173C78;padding:4px;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .ptable td{border:1px solid #bbb;padding:4px;text-align:center}
@@ -611,23 +614,62 @@ function exportPDF(){
   const missingHtml=missing.length
     ? missing.map(c=>`<span class="missing-center-chip">${c}</span>`).join('')
     : '<span class="missing-centers-empty">تم تقييم جميع المراكز المحددة</span>';
+  const totalAnswers=summaryRows.reduce((s,r)=>s+r.total,0);
+  const totalNo=summaryRows.reduce((s,r)=>s+r.no,0);
+  const top=summaryRows[0];
+  const summaryTableRows=summaryRows.map((r,i)=>`<tr>
+    <td>${i+1}</td>
+    <td class="q">${esc(r.question)}</td>
+    <td>${esc(r.template)}</td>
+    <td>${r.no}</td>
+    <td>${r.yes}</td>
+    <td>${r.total}</td>
+    <td>${Math.round(r.rate*100)}%</td>
+    <td>${r.centersCount}</td>
+    <td>${esc(r.locationsText||'—')}</td>
+  </tr>`).join('');
   document.getElementById('printView').innerHTML=`
     <div class="pdoc">
-      <div class="phead">
-        <div class="pbrand"><img src="/Alrajhi.png" alt="Al Rajhi"></div>
-        <div><div class="ptitle">تقييم المراكز من اسم المركز</div><div class="psub">المقارنة الأساسية للمراكز المحددة</div></div>
-        <div class="pmeta">${new Date().toLocaleString('ar-SA')}</div>
+      <div class="psection">
+        <div class="phead">
+          <div class="pbrand"><img src="/Alrajhi.png" alt="Al Rajhi"></div>
+          <div><div class="ptitle">تقرير عناصر الاستمارات</div><div class="psub">ملخص النتائج حسب الفلاتر الحالية</div></div>
+          <div class="pmeta">${new Date().toLocaleString('ar-SA')}</div>
+        </div>
+        <div class="pkpis">
+          <div class="pkpi"><span>عدد الاستمارات</span><strong>${formsCount(filteredRows)}</strong></div>
+          <div class="pkpi"><span>إجمالي إجابات لا</span><strong>${totalNo}</strong></div>
+          <div class="pkpi"><span>نسبة لا</span><strong>${totalAnswers?Math.round(totalNo/totalAnswers*100):0}%</strong></div>
+        </div>
+        <div class="pkpis">
+          <div class="pkpi"><span>المراكز المقيمة</span><strong>${scored.length}/${TARGET_CENTERS.length}</strong></div>
+          <div class="pkpi"><span>المراكز بدون تقييم</span><strong>${missing.length}</strong></div>
+          <div class="pkpi"><span>أعلى سؤال</span><strong style="font-size:10pt;line-height:1.5">${top?esc(top.question).slice(0,95):'—'}</strong></div>
+        </div>
       </div>
-      <div class="pkpis">
-        <div class="pkpi"><span>عدد الاستمارات</span><strong>${formsCount(filteredRows)}</strong></div>
-        <div class="pkpi"><span>المراكز المقيمة</span><strong>${scored.length}/${TARGET_CENTERS.length}</strong></div>
-        <div class="pkpi"><span>المعدل العام</span><strong>${avg==null?'—':fmtScore(avg)}</strong></div>
+
+      <div class="psection">
+        <div class="psection-title">الرسم البياني لأعلى عناصر الاستمارات</div>
+        ${chartImg?`<img class="pchart" src="${chartImg}" alt="مخطط دائري لعناصر الاستمارات">`:'<div class="empty">لا يوجد مخطط ضمن الفلاتر الحالية</div>'}
       </div>
-      ${chartImg?`<img class="pchart" src="${chartImg}" alt="مخطط دائري لعناصر الاستمارات">`:''}
-      <table class="ptable"><thead><tr><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th></tr></thead><tbody>${rows}</tbody></table>
-      <div style="margin-top:12px;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">
-        <div style="background:#173C78;color:#D8BF63;font-weight:800;text-align:center;padding:5px;-webkit-print-color-adjust:exact;print-color-adjust:exact">المراكز التي لم يتم تقييمها (${missing.length})</div>
-        <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center">${missingHtml}</div>
+
+      <div class="psection">
+        <div class="psection-title">تقييم المراكز حسب اسم المركز</div>
+        <table class="ptable"><thead><tr><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="pkpis" style="margin-top:12px">
+          <div class="pkpi"><span>المعدل العام للإنجاز لجميع المراكز</span><strong>${avg==null?'—':fmtScore(avg)}</strong></div>
+          <div class="pkpi"><span>عدد المراكز المقيمة</span><strong>${scored.length}/${TARGET_CENTERS.length}</strong></div>
+        </div>
+      </div>
+
+      <div class="psection">
+        <div class="psection-title">المراكز التي لم يتم تقييمها (${missing.length})</div>
+        <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">${missingHtml}</div>
+      </div>
+
+      <div class="psection">
+        <div class="psection-title">الأسئلة الأكثر حصولاً على إجابة لا</div>
+        <table class="ptable"><thead><tr><th>#</th><th>السؤال</th><th>الاستمارة</th><th>لا</th><th>نعم</th><th>الإجمالي</th><th>نسبة لا</th><th>المراكز</th><th>المواقع</th></tr></thead><tbody>${summaryTableRows||'<tr><td colspan="9">لا توجد إجابات لا ضمن الفلاتر الحالية</td></tr>'}</tbody></table>
       </div>
     </div>`;
   const printNow = () => setTimeout(()=>window.print(), 120);
