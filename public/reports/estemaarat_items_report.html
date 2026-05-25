@@ -249,7 +249,7 @@ const CENTER_NAME_DEFAULTS = {
   '2/637':'منظمين الهند (2/637)','20/520':'منظمين باكستان (20/520)','16/522':'منظمين باكستان (16/522)','18/520':'منظمين باكستان (18/520)','7/510':'منظمين بنجلادش (7/510)','6/502':'منظمين بنجلادش (6/502)','5/510':'منظمين بنجلادش (5/510)'
 };
 
-let rawRows=[], filteredRows=[], summaryRows=[], centerRows=[], chart=null, chartLarge=null;
+let rawRows=[], filteredRows=[], summaryRows=[], centerRows=[], chart=null, chartLarge=null, targetCentersCache=[], centerNamesCache=new Map();
 
 function parseDate(s){
   if(!s) return null;
@@ -319,9 +319,9 @@ function centerDefaultName(id){
   }
   return `مركز ضيافة (${key})`;
 }
-function allTargetCenters(){
+function buildTargetCenters(rows){
   const variants=new Map();
-  rawRows.forEach(row=>{
+  rows.forEach(row=>{
     const id=centerNumber(row);
     const base=centerBaseId(id);
     if(id && id!==base && TARGET_CENTERS.includes(base)){
@@ -334,28 +334,37 @@ function allTargetCenters(){
     return found?[...found].sort((a,b)=>a.localeCompare(b,'en',{numeric:true})):id;
   });
 }
+function allTargetCenters(){
+  return targetCentersCache.length?targetCentersCache:TARGET_CENTERS;
+}
 function centerNameMap(rows){
   const map=new Map();
-  allTargetCenters().forEach(num=>{
+  const targets=allTargetCenters();
+  const targetSet=new Set(targets);
+  targets.forEach(num=>{
     map.set(num,centerDefaultName(num));
   });
   rows.forEach(row=>{
     const num=centerNumber(row);
     const name=rowCenter(row);
-    if(allTargetCenters().includes(num) && name && !map.has(num)) map.set(num,name);
+    if(targetSet.has(num) && name && !map.has(num)) map.set(num,name);
   });
-  allTargetCenters().forEach(num=>{
+  targets.forEach(num=>{
     if(!map.has(num)) map.set(num,centerDefaultName(num));
   });
   return map;
 }
+function rebuildCenterCaches(){
+  targetCentersCache=buildTargetCenters(rawRows);
+  centerNamesCache=centerNameMap(rawRows);
+}
 function fillCenterSelect(){
   const sel=document.getElementById('fCenter');
-  const names=centerNameMap(rawRows);
+  sel.innerHTML='';
   allTargetCenters().forEach(num=>{
     const o=document.createElement('option');
     o.value=String(num);
-    o.textContent=names.get(num);
+    o.textContent=centerNamesCache.get(num);
     sel.appendChild(o);
   });
   renderCenterPicker();
@@ -363,7 +372,8 @@ function fillCenterSelect(){
 function selectedCenterNumbers(){
   const sel=document.getElementById('fCenter');
   if(!sel) return [];
-  return [...sel.selectedOptions].map(o=>o.value).filter(n=>allTargetCenters().includes(n));
+  const targetSet=new Set(allTargetCenters());
+  return [...sel.selectedOptions].map(o=>o.value).filter(n=>targetSet.has(n));
 }
 function activeTargetCenters(){
   const selected=selectedCenterNumbers();
@@ -374,7 +384,7 @@ function centerOrder(id){
   return idx===-1?Number.MAX_SAFE_INTEGER:idx;
 }
 function centerOptionLabel(num){
-  return centerNameMap(rawRows).get(num)||`مركز ضيافة (${num})`;
+  return centerNamesCache.get(num)||centerDefaultName(num);
 }
 function setCenterSelection(nums){
   const selected=new Set(nums.map(String));
@@ -441,6 +451,7 @@ async function loadData(){
     document.getElementById('loadMsg').textContent='تعذر تحميل بيانات التقرير.';
     return;
   }
+  rebuildCenterCaches();
   fillSelect('fTemplate', unique(rawRows,'اسم القالب'));
   fillSelect('fLoc', unique(rawRows,'الموقع'));
   fillCenterSelect();
@@ -727,7 +738,7 @@ function summarizeVisitRows(rows){
   const map=new Map();
   const selectedTemplate=document.getElementById('fTemplate')?.value || '';
   const templates=selectedTemplate?[selectedTemplate]:unique(rawRows,'اسم القالب');
-  const centersByNumber=centerNameMap(rawRows);
+  const centersByNumber=centerNamesCache;
   const targetCenters=activeTargetCenters();
   const templateList=templates.length?templates:['—'];
   templateList.forEach(template=>{
@@ -804,7 +815,7 @@ async function exportExcel(){
   }finally{btn.disabled=false;btn.textContent=old;}
 }
 function summarizeNoCentersByQuestion(rows){
-  const centersByNumber=centerNameMap(rawRows);
+  const centersByNumber=centerNamesCache;
   const map=new Map();
   rows.forEach(row=>{
     const center=centerNumber(row);
