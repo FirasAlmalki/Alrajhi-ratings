@@ -23,6 +23,24 @@ body{background:#F6F8FB;color:#102A4C}
 .flbl{font-size:.72rem;color:var(--navy);font-weight:700}
 .finp{background:#F9FBFE;border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-family:inherit;font-size:.82rem;color:var(--ink);outline:none;min-width:135px}
 .finp:focus{border-color:var(--gold2);box-shadow:0 0 0 3px rgba(216,191,99,.18)}
+.hidden-select{display:none}
+.center-picker{position:relative;min-width:280px}
+.center-picker-btn{width:100%;background:#F9FBFE;border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-family:inherit;font-size:.82rem;color:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer}
+.center-picker-btn:focus{outline:none;border-color:var(--gold2);box-shadow:0 0 0 3px rgba(216,191,99,.18)}
+.center-picker-count{background:var(--navy);color:var(--gold);border-radius:999px;padding:2px 9px;font-size:.72rem;font-weight:800;white-space:nowrap}
+.center-picker-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:50;width:min(420px,92vw);background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 45px rgba(16,42,76,.18);padding:10px;display:none}
+.center-picker.open .center-picker-menu{display:block}
+.center-picker-tools{display:flex;gap:8px;margin-bottom:8px}
+.center-search{flex:1;min-width:0}
+.center-mini-btn{border:1px solid var(--line);background:#F8FAFD;color:var(--navy);border-radius:7px;padding:7px 10px;font-family:inherit;font-size:.75rem;font-weight:800;cursor:pointer;white-space:nowrap}
+.center-list{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.center-option{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #EDF2FA;cursor:pointer;font-size:.82rem;color:var(--ink)}
+.center-option:last-child{border-bottom:none}
+.center-option:hover{background:#F8FAFD}
+.center-option input{accent-color:var(--gold)}
+.center-selected-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;max-width:420px}
+.center-chip{display:inline-flex;align-items:center;gap:5px;background:#EEF4FF;border:1px solid #C8D8F2;color:var(--navy);border-radius:999px;padding:4px 8px;font-size:.74rem;font-weight:800}
+.center-chip button{border:none;background:transparent;color:var(--navy);font:inherit;cursor:pointer;line-height:1}
 .fbtn,.export-btn{border-radius:8px;font-family:inherit;font-size:.83rem;font-weight:800;cursor:pointer;transition:background .15s,border-color .15s}
 .fbtn{padding:8px 18px;border:none}
 .fapply{background:var(--gold);color:var(--navy2)}
@@ -129,7 +147,25 @@ body{background:#F6F8FB;color:#102A4C}
     <div class="fgrp"><div class="flbl">إلى تاريخ</div><input type="date" class="finp" id="fTo"></div>
     <div class="fgrp"><div class="flbl">اسم الاستمارة</div><select class="finp" id="fTemplate"><option value="">— الكل —</option></select></div>
     <div class="fgrp"><div class="flbl">الموقع</div><select class="finp" id="fLoc"><option value="">— الكل —</option></select></div>
-    <div class="fgrp"><div class="flbl">مركز الضيافة</div><select class="finp" id="fCenter"><option value="">— الكل —</option></select></div>
+    <div class="fgrp">
+      <div class="flbl">مراكز الضيافة</div>
+      <select class="hidden-select" id="fCenter" multiple></select>
+      <div class="center-picker" id="centerPicker">
+        <button type="button" class="center-picker-btn" onclick="toggleCenterPicker()">
+          <span id="centerPickerLabel">كل المراكز</span>
+          <span class="center-picker-count" id="centerPickerCount">44</span>
+        </button>
+        <div class="center-picker-menu">
+          <div class="center-picker-tools">
+            <input class="finp center-search" id="centerSearch" placeholder="بحث عن مركز" oninput="filterCenterOptions()">
+            <button type="button" class="center-mini-btn" onclick="selectAllCenters()">تحديد الكل</button>
+            <button type="button" class="center-mini-btn" onclick="clearCenterSelection()">مسح</button>
+          </div>
+          <div class="center-list" id="centerOptions"></div>
+          <div class="center-selected-chips" id="centerSelectedChips"></div>
+        </div>
+      </div>
+    </div>
     <button class="fbtn fapply" onclick="applyFilter()">تطبيق</button>
     <button class="fbtn fclear" onclick="clearFilter()">مسح</button>
   </div>
@@ -274,6 +310,77 @@ function centerNameMap(rows){
   });
   return map;
 }
+function fillCenterSelect(){
+  const sel=document.getElementById('fCenter');
+  const names=centerNameMap(rawRows);
+  TARGET_CENTERS.forEach(num=>{
+    const o=document.createElement('option');
+    o.value=String(num);
+    o.textContent=names.get(num);
+    sel.appendChild(o);
+  });
+  renderCenterPicker();
+}
+function selectedCenterNumbers(){
+  const sel=document.getElementById('fCenter');
+  if(!sel) return [];
+  return [...sel.selectedOptions].map(o=>Number(o.value)).filter(n=>TARGET_CENTERS.includes(n));
+}
+function activeTargetCenters(){
+  const selected=selectedCenterNumbers();
+  return selected.length?selected:TARGET_CENTERS;
+}
+function centerOptionLabel(num){
+  return centerNameMap(rawRows).get(num)||`مركز ضيافة (${num})`;
+}
+function setCenterSelection(nums){
+  const selected=new Set(nums.map(String));
+  [...document.getElementById('fCenter').options].forEach(o=>{o.selected=selected.has(o.value);});
+  renderCenterPicker();
+}
+function toggleCenterPicker(){
+  document.getElementById('centerPicker').classList.toggle('open');
+}
+function renderCenterPicker(){
+  const selected=selectedCenterNumbers();
+  const selectedSet=new Set(selected);
+  const list=document.getElementById('centerOptions');
+  const chips=document.getElementById('centerSelectedChips');
+  const label=document.getElementById('centerPickerLabel');
+  const count=document.getElementById('centerPickerCount');
+  if(!list || !chips || !label || !count) return;
+  label.textContent=selected.length?`${selected.length} مراكز محددة`:'كل المراكز';
+  count.textContent=selected.length?selected.length:TARGET_CENTERS.length;
+  list.innerHTML=TARGET_CENTERS.map(num=>`
+    <label class="center-option" data-center-text="${esc(centerOptionLabel(num))}">
+      <input type="checkbox" value="${num}" ${selectedSet.has(num)?'checked':''} onchange="toggleCenterOption(${num},this.checked)">
+      <span>${esc(centerOptionLabel(num))}</span>
+    </label>`).join('');
+  chips.innerHTML=selected.length
+    ? selected.map(num=>`<span class="center-chip">${esc(centerOptionLabel(num))}<button type="button" onclick="removeCenterSelection(${num})">×</button></span>`).join('')
+    : '<span class="center-chip">كل المراكز</span>';
+  filterCenterOptions();
+}
+function toggleCenterOption(num, checked){
+  const set=new Set(selectedCenterNumbers());
+  checked?set.add(num):set.delete(num);
+  setCenterSelection([...set]);
+}
+function removeCenterSelection(num){
+  setCenterSelection(selectedCenterNumbers().filter(n=>n!==num));
+}
+function selectAllCenters(){
+  setCenterSelection(TARGET_CENTERS);
+}
+function clearCenterSelection(){
+  setCenterSelection([]);
+}
+function filterCenterOptions(){
+  const q=norm(document.getElementById('centerSearch')?.value||'');
+  document.querySelectorAll('#centerOptions .center-option').forEach(el=>{
+    el.style.display=!q || norm(el.dataset.centerText).includes(q)?'flex':'none';
+  });
+}
 
 async function loadData(){
   const r=await fetch(WEBHOOK);
@@ -293,11 +400,16 @@ async function loadData(){
   }
   fillSelect('fTemplate', unique(rawRows,'اسم القالب'));
   fillSelect('fLoc', unique(rawRows,'الموقع'));
-  fillSelect('fCenter', uniqueBy(rawRows,rowCenter));
+  fillCenterSelect();
   document.getElementById('loadMsg').style.display='none';
   document.getElementById('dash').style.display='block';
   renderAll();
 })();
+
+document.addEventListener('click',e=>{
+  const picker=document.getElementById('centerPicker');
+  if(picker && !picker.contains(e.target)) picker.classList.remove('open');
+});
 
 function fillSelect(id, values){
   const sel=document.getElementById(id);
@@ -308,20 +420,22 @@ function applyFilter(){
   const to=document.getElementById('fTo').value;
   const template=document.getElementById('fTemplate').value;
   const loc=document.getElementById('fLoc').value;
-  const center=document.getElementById('fCenter').value;
+  const centers=selectedCenterNumbers();
   filteredRows=rawRows.filter(r=>{
     const d=parseDate(rowDate(r));
     if(from&&d&&d<from) return false;
     if(to&&d&&d>to) return false;
     if(template&&r['اسم القالب']!==template) return false;
     if(loc&&r['الموقع']!==loc) return false;
-    if(center&&rowCenter(r)!==center) return false;
+    if(centers.length&&!centers.includes(centerNumber(r))) return false;
     return true;
   });
   renderAll();
 }
 function clearFilter(){
-  ['fFrom','fTo','fTemplate','fLoc','fCenter'].forEach(id=>document.getElementById(id).value='');
+  ['fFrom','fTo','fTemplate','fLoc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('centerSearch').value='';
+  setCenterSelection([]);
   filteredRows=[...rawRows];
   renderAll();
 }
@@ -364,7 +478,7 @@ function summarizeCenters(rows){
     if(!map.has(center)) map.set(center,new Map());
     map.get(center).set(assessmentKey(row),score);
   });
-  return TARGET_CENTERS.map(center=>{
+  return activeTargetCenters().map(center=>{
     const scores=[...(map.get(center)?.values() || [])];
     const score=scores.length?scores.reduce((s,v)=>s+v,0)/scores.length:null;
     return {center,score,count:scores.length};
@@ -394,8 +508,8 @@ function renderKpis(){
     <div class="kpi dark"><div class="kpi-lbl">إجمالي إجابات لا</div><div class="kpi-val">${totalNo}</div></div>
     <div class="kpi"><div class="kpi-lbl">عدد الأسئلة التي ظهر فيها لا</div><div class="kpi-val">${summaryRows.length}</div></div>
     <div class="kpi"><div class="kpi-lbl">نسبة لا من إجابات نعم/لا</div><div class="kpi-val">${totalAnswers?Math.round(totalNo/totalAnswers*100):0}%</div></div>
-    <div class="kpi"><div class="kpi-lbl">المراكز المقيمة من القائمة</div><div class="kpi-val">${centersWithScores.length}/${TARGET_CENTERS.length}</div></div>
-    <div class="kpi"><div class="kpi-lbl">المراكز بدون تقييم</div><div class="kpi-val">${TARGET_CENTERS.length-centersWithScores.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">المراكز المقيمة من القائمة</div><div class="kpi-val">${centersWithScores.length}/${centerRows.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">المراكز بدون تقييم</div><div class="kpi-val">${centerRows.length-centersWithScores.length}</div></div>
     <div class="kpi"><div class="kpi-lbl">أعلى سؤال</div><div class="kpi-val" style="font-size:1.05rem;line-height:1.45">${top?esc(top.question).slice(0,80):'—'}</div></div>`;
 }
 function renderCenterComparison(){
@@ -425,7 +539,7 @@ function assessedCenters(){
   return centerRows.filter(r=>r.score!=null).map(r=>r.center);
 }
 function centerProgressStat(count){
-  const total=TARGET_CENTERS.length;
+  const total=centerRows.length || activeTargetCenters().length;
   return `${count} مركز من ${total}`;
 }
 function renderMissingCenters(){
@@ -571,16 +685,17 @@ function summarizeVisitRows(rows){
   const selectedTemplate=document.getElementById('fTemplate')?.value || '';
   const templates=selectedTemplate?[selectedTemplate]:unique(rawRows,'اسم القالب');
   const centersByNumber=centerNameMap(rawRows);
+  const targetCenters=activeTargetCenters();
   const templateList=templates.length?templates:['—'];
   templateList.forEach(template=>{
-    TARGET_CENTERS.forEach(center=>{
+    targetCenters.forEach(center=>{
       const team=centersByNumber.get(center);
       map.set(`${template}|||${team}`,{template,team,center,visits:new Set(),lastDate:''});
     });
   });
   rows.forEach(row=>{
     const center=centerNumber(row);
-    if(scoreValue(row)==null || !TARGET_CENTERS.includes(center)) return;
+    if(scoreValue(row)==null || !targetCenters.includes(center)) return;
     const template=row['اسم القالب']||'—';
     const team=centersByNumber.get(center)||rowCenter(row);
     if(!team) return;
@@ -696,7 +811,7 @@ function exportPDF(){
           <div class="pkpi"><span>نسبة لا</span><strong>${totalAnswers?Math.round(totalNo/totalAnswers*100):0}%</strong></div>
         </div>
         <div class="pkpis">
-          <div class="pkpi"><span>المراكز المقيمة</span><strong>${scored.length}/${TARGET_CENTERS.length}</strong></div>
+          <div class="pkpi"><span>المراكز المقيمة</span><strong>${scored.length}/${centerRows.length}</strong></div>
           <div class="pkpi"><span>المراكز بدون تقييم</span><strong>${missing.length}</strong></div>
           <div class="pkpi"><span>أعلى سؤال</span><strong style="font-size:10pt;line-height:1.5">${top?esc(top.question).slice(0,95):'—'}</strong></div>
         </div>
@@ -712,7 +827,7 @@ function exportPDF(){
         <table class="ptable"><thead><tr><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th></tr></thead><tbody>${rows}</tbody></table>
         <div class="pkpis" style="margin-top:12px">
           <div class="pkpi"><span>المعدل العام للإنجاز لجميع المراكز</span><strong>${avg==null?'—':fmtScore(avg)}</strong></div>
-          <div class="pkpi"><span>عدد المراكز المقيمة</span><strong>${scored.length}/${TARGET_CENTERS.length}</strong></div>
+          <div class="pkpi"><span>عدد المراكز المقيمة</span><strong>${scored.length}/${centerRows.length}</strong></div>
         </div>
       </div>
 
