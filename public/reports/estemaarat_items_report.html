@@ -561,8 +561,8 @@ function summarize(rows){
       if(isNo(answer)) item.no++;
       if(isYes(answer)) item.yes++;
       if(isNo(answer)||isYes(answer)) item.total++;
-      if(rowCenter(row)) item.centers.add(rowCenter(row));
-      if(row['الموقع']) item.locations.add(row['الموقع']);
+      if(isNo(answer) && rowCenter(row)) item.centers.add(rowCenter(row));
+      if(isNo(answer) && row['الموقع']) item.locations.add(row['الموقع']);
     });
   });
   return [...map.values()]
