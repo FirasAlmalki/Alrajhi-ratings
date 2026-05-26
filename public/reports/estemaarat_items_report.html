@@ -129,6 +129,24 @@ body{background:#F6F8FB;color:#102A4C}
   .ptable td.q{text-align:right}
   .ptable tr:nth-child(even) td{background:#f6f6f6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+/* PDF section picker */
+.pdf-picker-ov{position:fixed;inset:0;background:rgba(12,37,80,.78);z-index:950;display:none;align-items:center;justify-content:center;padding:22px}
+.pdf-picker-ov.open{display:flex}
+.pdf-picker-box{background:#fff;border:1px solid var(--line);border-radius:14px;width:min(520px,95vw);box-shadow:0 24px 70px rgba(16,42,76,.35);overflow:hidden}
+.pdf-picker-hdr{background:var(--navy);color:#fff;border-bottom:4px solid var(--gold);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:.95rem}
+.pdf-picker-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:7px;padding:4px 11px;font-family:inherit;font-weight:800;cursor:pointer;font-size:.85rem}
+.pdf-picker-body{padding:14px 18px;max-height:55vh;overflow-y:auto}
+.pdf-picker-hint{font-size:.76rem;color:var(--muted);margin-bottom:10px}
+.pdf-section-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;background:#F9FBFE;cursor:default;user-select:none}
+.pdf-section-item input[type=checkbox]{accent-color:var(--gold2);width:16px;height:16px;cursor:pointer;flex-shrink:0}
+.pdf-section-item label{flex:1;font-size:.85rem;font-weight:700;color:var(--ink);cursor:pointer}
+.pdf-move-btns{display:flex;flex-direction:column;gap:3px}
+.pdf-move-btn{background:var(--navy);color:var(--gold);border:none;border-radius:5px;width:22px;height:22px;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.pdf-move-btn:disabled{opacity:.3;cursor:not-allowed}
+.pdf-picker-footer{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+.pdf-confirm-btn{background:var(--gold);color:var(--navy2);border:none;border-radius:8px;padding:9px 22px;font-family:inherit;font-weight:800;font-size:.9rem;cursor:pointer}
+.pdf-confirm-btn:hover{background:var(--gold2)}
+.pdf-cancel-btn{background:#EDF2FA;color:var(--navy);border:1px solid var(--line);border-radius:8px;padding:9px 18px;font-family:inherit;font-weight:800;font-size:.9rem;cursor:pointer}
 </style>
 </head>
 <body>
@@ -174,7 +192,7 @@ body{background:#F6F8FB;color:#102A4C}
     <div id="loadMsg" class="loading">جاري تحميل بيانات عناصر الاستمارات...</div>
     <div id="dash" style="display:none">
       <div class="export-row">
-        <button class="export-btn gold" onclick="exportPDF()">تصدير PDF</button>
+        <button class="export-btn gold" onclick="openPdfPicker()">تصدير PDF</button>
         <button class="export-btn" id="excelBtn" onclick="exportExcel()">تصدير Excel</button>
         <button class="export-btn" id="noCentersExcelBtn" onclick="exportNoCentersExcel()">تقرير لا حسب المراكز</button>
       </div>
@@ -229,6 +247,25 @@ body{background:#F6F8FB;color:#102A4C}
     </div>
   </div>
 </div>
+
+<!-- PDF Section Picker Modal -->
+<div class="pdf-picker-ov" id="pdfPickerOv" onclick="if(event.target===this)closePdfPicker()">
+  <div class="pdf-picker-box">
+    <div class="pdf-picker-hdr">
+      <span>اختر أقسام PDF ورتّبها</span>
+      <button class="pdf-picker-close" onclick="closePdfPicker()">✕ إغلاق</button>
+    </div>
+    <div class="pdf-picker-body">
+      <div class="pdf-picker-hint">اختر الأقسام التي تريدها وحرّكها لتغيير الترتيب</div>
+      <div id="pdfSectionList"></div>
+    </div>
+    <div class="pdf-picker-footer">
+      <button class="pdf-cancel-btn" onclick="closePdfPicker()">إلغاء</button>
+      <button class="pdf-confirm-btn" onclick="confirmPdfExport()">تصدير PDF</button>
+    </div>
+  </div>
+</div>
+
 <div class="print-only" id="printView"></div>
 
 <script>
@@ -665,7 +702,7 @@ const outsidePieLabels = {
       ctx.stroke();
       ctx.textAlign = rightSide ? 'left' : 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${label} (${value} - ${pct}%)`, ex + (rightSide ? 5 : -5), my);
+      ctx.fillText(`${label} (${value})`, ex + (rightSide ? 5 : -5), my);
     });
     ctx.restore();
   }
@@ -677,7 +714,7 @@ function chartConfig(rows, opts={}){
   return {
     type:'doughnut',
     data:{
-      labels:rows.map(r=>r.question.length>labelLength?r.question.slice(0,labelLength)+'...':r.question),
+      labels:rows.map(r=>{ const q=r.question.replace(/^\d+\.\s*/,''); return q.length>labelLength?q.slice(0,labelLength)+'...':q; }),
       datasets:[{
         label:'عدد لا',
         data:rows.map(r=>r.no),
@@ -701,8 +738,8 @@ function chartConfig(rows, opts={}){
   };
 }
 function chartRowsForSummary(){
-  const top=summaryRows.slice(0,8);
-  const otherNo=summaryRows.slice(8).reduce((s,r)=>s+r.no,0);
+  const top=summaryRows.slice(0,5);
+  const otherNo=summaryRows.slice(5).reduce((s,r)=>s+r.no,0);
   return otherNo>0?[...top,{question:'أخرى',no:otherNo}]:top;
 }
 function renderChart(){
@@ -957,33 +994,76 @@ async function exportNoCentersExcel(){
     a.click(); URL.revokeObjectURL(a.href);
   }finally{btn.disabled=false;btn.textContent=old;}
 }
+// ── PDF Section Picker ───────────────────────────────────────────────────────
+const PDF_SECTIONS = [
+  { id:'chart',    label:'الرسم البياني لأعلى عناصر الاستمارات' },
+  { id:'centers',  label:'تقييم المراكز حسب اسم المركز' },
+  { id:'missing',  label:'المراكز التي لم يتم تقييمها' },
+  { id:'assessed', label:'المراكز التي تم تقييمها' },
+  { id:'ranking',  label:'الأسئلة الأكثر حصولاً على إجابات لا' },
+];
+let _pdfOrder = PDF_SECTIONS.map(s=>s.id);
+let _pdfChecked = new Set(PDF_SECTIONS.map(s=>s.id));
+
+function openPdfPicker(){
+  renderPdfSectionList();
+  document.getElementById('pdfPickerOv').classList.add('open');
+}
+function closePdfPicker(){
+  document.getElementById('pdfPickerOv').classList.remove('open');
+}
+function renderPdfSectionList(){
+  const list = document.getElementById('pdfSectionList');
+  list.innerHTML = _pdfOrder.map((id, idx) => {
+    const sec = PDF_SECTIONS.find(s=>s.id===id);
+    const checked = _pdfChecked.has(id);
+    return `<div class="pdf-section-item" id="psi_${id}">
+      <input type="checkbox" id="psc_${id}" ${checked?'checked':''} onchange="_pdfChecked.has('${id}')?_pdfChecked.delete('${id}'):_pdfChecked.add('${id}')">
+      <label for="psc_${id}">${sec.label}</label>
+      <div class="pdf-move-btns">
+        <button class="pdf-move-btn" onclick="movePdfSection('${id}',-1)" ${idx===0?'disabled':''} title="أعلى">▲</button>
+        <button class="pdf-move-btn" onclick="movePdfSection('${id}',1)" ${idx===_pdfOrder.length-1?'disabled':''} title="أسفل">▼</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function movePdfSection(id, dir){
+  const i = _pdfOrder.indexOf(id);
+  if(i < 0) return;
+  const ni = i + dir;
+  if(ni < 0 || ni >= _pdfOrder.length) return;
+  [_pdfOrder[i], _pdfOrder[ni]] = [_pdfOrder[ni], _pdfOrder[i]];
+  renderPdfSectionList();
+}
+function confirmPdfExport(){
+  closePdfPicker();
+  exportPDF();
+}
+
 function exportPDF(){
   chart?.update('none');
-  const chartImg=chart?.toBase64Image()||'';
-  const split=Math.ceil(centerRows.length/2);
-  const left=centerRows.slice(0,split);
-  const right=centerRows.slice(split);
-  const rows=left.map((a,i)=>{
+  const chartImg = chart?.toBase64Image()||'';
+  const split = Math.ceil(centerRows.length/2);
+  const left = centerRows.slice(0,split);
+  const right = centerRows.slice(split);
+  const centerTableRows = left.map((a,i)=>{
     const b=right[i];
     return `<tr>
       <td>${a.center}</td><td>${fmtScore(a.score)||'&nbsp;'}</td>
       <td>${b?b.center:''}</td><td>${b?(fmtScore(b.score)||'&nbsp;'):''}</td>
     </tr>`;
   }).join('');
-  const scored=centerRows.filter(r=>r.score!=null);
-  const avg=scored.length?scored.reduce((s,r)=>s+r.score,0)/scored.length:null;
-  const missing=missingCenters();
-  const missingHtml=missing.length
+  const scored = centerRows.filter(r=>r.score!=null);
+  const avg = scored.length?scored.reduce((s,r)=>s+r.score,0)/scored.length:null;
+  const missing = missingCenters();
+  const missingHtml = missing.length
     ? missing.map(c=>`<span class="missing-center-chip">${c}</span>`).join('')
     : '<span class="missing-centers-empty">تم تقييم جميع المراكز المحددة</span>';
-  const assessed=assessedCenters();
-  const assessedHtml=assessed.length
+  const assessed = assessedCenters();
+  const assessedHtml = assessed.length
     ? assessed.map(c=>`<span class="assessed-center-chip">${c}</span>`).join('')
     : '<span class="missing-centers-empty">لا توجد مراكز مقيمة ضمن الفلاتر الحالية</span>';
-  const totalAnswers=summaryRows.reduce((s,r)=>s+r.total,0);
-  const totalNo=summaryRows.reduce((s,r)=>s+r.no,0);
-  const top=summaryRows[0];
-  const summaryTableRows=summaryRows.map((r,i)=>`<tr>
+  const summaryTableRows = summaryRows.map((r,i)=>`<tr>
     <td>${i+1}</td>
     <td class="q">${esc(r.question)}</td>
     <td>${esc(r.template)}</td>
@@ -994,63 +1074,40 @@ function exportPDF(){
     <td>${r.centersCount}</td>
     <td>${esc(r.locationsText||'—')}</td>
   </tr>`).join('');
-  document.getElementById('printView').innerHTML=`
-    <div class="pdoc">
-      <div class="psection">
-        <div class="phead">
-          <div class="pbrand"><img src="/Alrajhi.png" alt="Al Rajhi"></div>
-          <div><div class="ptitle">تقرير عناصر الاستمارات</div><div class="psub">ملخص النتائج حسب الفلاتر الحالية</div></div>
-          <div class="pmeta">${new Date().toLocaleString('ar-SA')}</div>
-        </div>
-        <div class="pkpis">
-          <div class="pkpi"><span>عدد الاستمارات</span><strong>${formsCount(filteredRows)}</strong></div>
-          <div class="pkpi"><span>إجمالي إجابات لا</span><strong>${totalNo}</strong></div>
-          <div class="pkpi"><span>نسبة لا</span><strong>${totalAnswers?Math.round(totalNo/totalAnswers*100):0}%</strong></div>
-        </div>
-        <div class="pkpis">
-          <div class="pkpi"><span>المراكز المقيمة</span><strong>${scored.length}/${centerRows.length}</strong></div>
-          <div class="pkpi"><span>المراكز بدون تقييم</span><strong>${missing.length}</strong></div>
-          <div class="pkpi"><span>أعلى سؤال</span><strong style="font-size:10pt;line-height:1.5">${top?esc(top.question).slice(0,95):'—'}</strong></div>
-        </div>
-      </div>
 
-      <div class="psection">
-        <div class="psection-title">الرسم البياني لأعلى عناصر الاستمارات</div>
-        ${chartImg?`<img class="pchart" src="${chartImg}" alt="مخطط دائري لعناصر الاستمارات">`:'<div class="empty">لا يوجد مخطط ضمن الفلاتر الحالية</div>'}
+  const sectionHTML = {
+    chart: `<div class="psection">
+      <div class="psection-title">الرسم البياني لأعلى عناصر الاستمارات</div>
+      ${chartImg?`<img class="pchart" src="${chartImg}" alt="مخطط دائري لعناصر الاستمارات">`:'<div class="empty">لا يوجد مخطط ضمن الفلاتر الحالية</div>'}
+    </div>`,
+    centers: `<div class="psection">
+      <div class="psection-title">تقييم المراكز حسب اسم المركز</div>
+      <table class="ptable"><thead><tr><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th></tr></thead><tbody>${centerTableRows}</tbody></table>
+      <div class="pkpis" style="margin-top:12px">
+        <div class="pkpi"><span>المعدل العام للإنجاز لجميع المراكز</span><strong>${avg==null?'—':fmtScore(avg)}</strong></div>
+        <div class="pkpi"><span>عدد المراكز المقيمة</span><strong>${scored.length}/${centerRows.length}</strong></div>
       </div>
+    </div>`,
+    missing: `<div class="psection">
+      <div class="psection-title">المراكز التي لم يتم تقييمها (${centerProgressStat(missing.length)})</div>
+      <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">${missingHtml}</div>
+    </div>`,
+    assessed: `<div class="psection">
+      <div class="psection-title">المراكز التي تم تقييمها (${centerProgressStat(assessed.length)})</div>
+      <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">${assessedHtml}</div>
+    </div>`,
+    ranking: `<div class="psection">
+      <div class="psection-title">الأسئلة الأكثر حصولاً على إجابة لا</div>
+      <table class="ptable"><thead><tr><th>#</th><th>السؤال</th><th>الاستمارة</th><th>لا</th><th>نعم</th><th>الإجمالي</th><th>نسبة لا</th><th>المراكز</th><th>المواقع</th></tr></thead><tbody>${summaryTableRows||'<tr><td colspan="9">لا توجد إجابات لا ضمن الفلاتر الحالية</td></tr>'}</tbody></table>
+    </div>`,
+  };
 
-      <div class="psection">
-        <div class="psection-title">تقييم المراكز حسب اسم المركز</div>
-        <table class="ptable"><thead><tr><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th><th>رقم المركز</th><th>نتيجة تقييم المراقبة</th></tr></thead><tbody>${rows}</tbody></table>
-        <div class="pkpis" style="margin-top:12px">
-          <div class="pkpi"><span>المعدل العام للإنجاز لجميع المراكز</span><strong>${avg==null?'—':fmtScore(avg)}</strong></div>
-          <div class="pkpi"><span>عدد المراكز المقيمة</span><strong>${scored.length}/${centerRows.length}</strong></div>
-        </div>
-      </div>
-
-      <div class="psection">
-        <div class="psection-title">المراكز التي لم يتم تقييمها (${centerProgressStat(missing.length)})</div>
-        <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">${missingHtml}</div>
-      </div>
-
-      <div class="psection">
-        <div class="psection-title">المراكز التي تم تقييمها (${centerProgressStat(assessed.length)})</div>
-        <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">${assessedHtml}</div>
-      </div>
-
-      <div class="psection">
-        <div class="psection-title">الأسئلة الأكثر حصولاً على إجابة لا</div>
-        <table class="ptable"><thead><tr><th>#</th><th>السؤال</th><th>الاستمارة</th><th>لا</th><th>نعم</th><th>الإجمالي</th><th>نسبة لا</th><th>المراكز</th><th>المواقع</th></tr></thead><tbody>${summaryTableRows||'<tr><td colspan="9">لا توجد إجابات لا ضمن الفلاتر الحالية</td></tr>'}</tbody></table>
-      </div>
-    </div>`;
+  const selectedSections = _pdfOrder.filter(id=>_pdfChecked.has(id)).map(id=>sectionHTML[id]).join('');
+  document.getElementById('printView').innerHTML=`<div class="pdoc">${selectedSections}</div>`;
   const printNow = () => setTimeout(()=>window.print(), 120);
   const printChart = document.querySelector('#printView .pchart');
-  if(printChart && !printChart.complete){
-    printChart.onload = printNow;
-    printChart.onerror = printNow;
-  } else {
-    printNow();
-  }
+  if(printChart && !printChart.complete){ printChart.onload=printNow; printChart.onerror=printNow; }
+  else { printNow(); }
 }
 </script>
 </body>
