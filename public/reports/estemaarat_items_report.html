@@ -128,6 +128,8 @@ body{background:#F6F8FB;color:#102A4C}
   .ptable td{border:1px solid #bbb;padding:4px;text-align:center}
   .ptable td.q{text-align:right}
   .ptable tr:nth-child(even) td{background:#f6f6f6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @page landscape-page{size:A4 landscape;margin:12mm}
+  .psection-landscape{page:landscape-page}
 }
 /* PDF section picker */
 .pdf-picker-ov{position:fixed;inset:0;background:rgba(12,37,80,.78);z-index:950;display:none;align-items:center;justify-content:center;padding:22px}
@@ -531,6 +533,11 @@ function clearFilter(){
   renderAll();
 }
 
+// Strip leading "N. " or "NN. " number prefix from question labels
+function stripQNum(q){ return String(q||'').replace(/^\d+\.\s*/,''); }
+// Returns true if question is a section header (not a real question)
+function isSectionHeader(q){ return /^عناصر\s/i.test(stripQNum(q)) || /^أسئلة\s+استمارة/i.test(stripQNum(q)); }
+
 function rowResponses(row){
   const qKey=findKey(row,QUESTION_KEYS);
   const aKey=findKey(row,ANSWER_KEYS);
@@ -545,6 +552,7 @@ function summarize(rows){
   rows.forEach(row=>{
     const template=row['اسم القالب']||'—';
     rowResponses(row).forEach(({question,answer})=>{
+      if(isSectionHeader(question)) return;
       const key=`${template}|||${question}`;
       if(!map.has(key)) map.set(key,{template,question,no:0,yes:0,total:0,centers:new Set(),locations:new Set()});
       const item=map.get(key);
@@ -652,7 +660,7 @@ function renderAssessedCenters(){
 function renderTable(){
   const rows=summaryRows.map((r,i)=>`<tr>
     <td>${i+1}</td>
-    <td class="question">${esc(r.question)}</td>
+    <td class="question">${esc(stripQNum(r.question))}</td>
     <td class="template">${esc(r.template)}</td>
     <td><span class="pill pill-no">${r.no}</span></td>
     <td>${r.yes}</td>
@@ -1065,7 +1073,7 @@ function exportPDF(){
     : '<span class="missing-centers-empty">لا توجد مراكز مقيمة ضمن الفلاتر الحالية</span>';
   const summaryTableRows = summaryRows.map((r,i)=>`<tr>
     <td>${i+1}</td>
-    <td class="q">${esc(r.question)}</td>
+    <td class="q">${esc(stripQNum(r.question))}</td>
     <td>${esc(r.template)}</td>
     <td>${r.no}</td>
     <td>${r.yes}</td>
@@ -1076,7 +1084,7 @@ function exportPDF(){
   </tr>`).join('');
 
   const sectionHTML = {
-    chart: `<div class="psection">
+    chart: `<div class="psection psection-landscape">
       <div class="psection-title">الرسم البياني لأعلى عناصر الاستمارات</div>
       ${chartImg?`<img class="pchart" src="${chartImg}" alt="مخطط دائري لعناصر الاستمارات">`:'<div class="empty">لا يوجد مخطط ضمن الفلاتر الحالية</div>'}
     </div>`,
