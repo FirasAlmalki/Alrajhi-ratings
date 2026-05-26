@@ -97,6 +97,8 @@ body{background:#F6F8FB;color:#102A4C}
 .missing-centers-list{display:flex;flex-wrap:wrap;gap:8px}
 .missing-center-chip{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:6px 10px;border-radius:8px;background:#FFF8E6;border:1px solid rgba(216,191,99,.55);color:var(--navy);font-weight:800;font-size:.86rem}
 .assessed-center-chip{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:6px 10px;border-radius:8px;background:#EAF7F0;border:1px solid rgba(38,138,91,.35);color:var(--green);font-weight:800;font-size:.86rem}
+.assigned-center-chip{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:6px 10px;border-radius:8px;background:#EEF4FF;border:1px solid #C8D8F2;color:var(--navy);font-weight:800;font-size:.86rem}
+.unassigned-center-chip{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:6px 10px;border-radius:8px;background:#FBE7E7;border:1px solid rgba(184,50,50,.32);color:var(--danger);font-weight:800;font-size:.86rem}
 .missing-centers-empty{color:var(--green);font-weight:800;text-align:center;padding:8px}
 .pill{display:inline-flex;align-items:center;justify-content:center;min-width:48px;border-radius:999px;padding:3px 9px;font-weight:800}
 .pill-no{background:#FBE7E7;color:var(--danger);border:1px solid #F0B9B9}
@@ -143,8 +145,10 @@ body{background:#F6F8FB;color:#102A4C}
   </div>
 
   <div class="fbar">
-    <div class="fgrp"><div class="flbl">من تاريخ</div><input type="date" class="finp" id="fFrom"></div>
-    <div class="fgrp"><div class="flbl">إلى تاريخ</div><input type="date" class="finp" id="fTo"></div>
+    <div class="fgrp"><div class="flbl">الإسناد من</div><input type="datetime-local" class="finp" id="fAssignFrom"></div>
+    <div class="fgrp"><div class="flbl">الإسناد إلى</div><input type="datetime-local" class="finp" id="fAssignTo"></div>
+    <div class="fgrp"><div class="flbl">التقييم من</div><input type="datetime-local" class="finp" id="fAssessFrom"></div>
+    <div class="fgrp"><div class="flbl">التقييم إلى</div><input type="datetime-local" class="finp" id="fAssessTo"></div>
     <div class="fgrp"><div class="flbl">اسم الاستمارة</div><select class="finp" id="fTemplate"><option value="">— الكل —</option></select></div>
     <div class="fgrp"><div class="flbl">الموقع</div><select class="finp" id="fLoc"><option value="">— الكل —</option></select></div>
     <div class="fgrp">
@@ -204,6 +208,20 @@ body{background:#F6F8FB;color:#102A4C}
         </div>
         <div class="missing-centers-body" id="assessedCentersBody"></div>
       </div>
+      <div class="panel missing-centers-panel">
+        <div class="panel-hdr">
+          <span>المراكز التي تم الإسناد إليها</span>
+          <span class="center-score-sub" id="assignedCentersCount">—</span>
+        </div>
+        <div class="missing-centers-body" id="assignedCentersBody"></div>
+      </div>
+      <div class="panel missing-centers-panel">
+        <div class="panel-hdr">
+          <span>المراكز التي لم يتم الإسناد إليها</span>
+          <span class="center-score-sub" id="unassignedCentersCount">—</span>
+        </div>
+        <div class="missing-centers-body" id="unassignedCentersBody"></div>
+      </div>
       <div class="layout">
         <div class="panel">
           <div class="panel-hdr">الأسئلة الأكثر حصولاً على إجابة "لا"</div>
@@ -235,7 +253,7 @@ body{background:#F6F8FB;color:#102A4C}
 const WEBHOOK = 'https://n8n.thelpw.com/webhook/estimaratitemsreport';
 const META_KEYS = new Set([
   'row_number','unique_key','#','ID','id','اسم القالب','فريق الضيافة','اسم المركز','الموقع','التاريخ','تاريخ الزيارة','تاريخ التقييم',
-  'النسبة','النسبة %','تقييم النموذج/100','رقم السؤال','timestamp','Timestamp','ملاحظات','الملاحظات','ملاحظة','الاسم','اسم المستخدم','الموظف','المشرف','القسم'
+  'وقت الزيارة','النسبة','النسبة %','تقييم النموذج/100','رقم السؤال','timestamp','Timestamp','ملاحظات','الملاحظات','ملاحظة','الاسم','اسم المستخدم','الموظف','المشرف','القسم'
 ]);
 const QUESTION_KEYS = ['اسم العنصر','السؤال','سؤال','العنصر','البند','العبارة','question','Question','item','Item'];
 const ANSWER_KEYS = ['التقييم','الإجابة','الاجابة','الإجابه','الإجابة المختارة','الاجابة المختارة','answer','Answer','value','Value'];
@@ -258,6 +276,28 @@ function parseDate(s){
   if(p.length===3) return `${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
   if(/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0,10);
   return null;
+}
+function parseDateTime(s){
+  if(!s) return null;
+  const text=String(s).trim().replace(/\u200f/g,'').replace(/\s+/g,' ');
+  if(!text) return null;
+  let m=text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0)).getTime();
+  m=text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?$/i);
+  if(!m) return null;
+  let h=+(m[4]||0);
+  const ampm=(m[7]||'').toUpperCase();
+  if(ampm==='PM' && h<12) h+=12;
+  if(ampm==='AM' && h===12) h=0;
+  return new Date(+m[3],+m[1]-1,+m[2],h,+(m[5]||0),+(m[6]||0)).getTime();
+}
+function rowAssignmentDateTime(row){
+  const visitDate=row['تاريخ الزيارة'] || row['التاريخ'] || '';
+  const visitTime=row['وقت الزيارة'] || '';
+  return parseDateTime(`${visitDate} ${visitTime}`) ?? parseDateTime(visitDate);
+}
+function rowAssessmentDateTime(row){
+  return parseDateTime(row['تاريخ التقييم']);
 }
 function fmtDate(s){
   const d=parseDate(s);
@@ -406,11 +446,11 @@ function renderCenterPicker(){
   count.textContent=selected.length?selected.length:allTargetCenters().length;
   list.innerHTML=allTargetCenters().map(num=>`
     <label class="center-option" data-center-text="${esc(centerOptionLabel(num))}">
-      <input type="checkbox" value="${num}" ${selectedSet.has(num)?'checked':''} onchange="toggleCenterOption(${num},this.checked)">
+      <input type="checkbox" value="${esc(num)}" ${selectedSet.has(num)?'checked':''} onchange="toggleCenterOption('${esc(num)}',this.checked)">
       <span>${esc(centerOptionLabel(num))}</span>
     </label>`).join('');
   chips.innerHTML=selected.length
-    ? selected.map(num=>`<span class="center-chip">${esc(centerOptionLabel(num))}<button type="button" onclick="removeCenterSelection(${num})">×</button></span>`).join('')
+    ? selected.map(num=>`<span class="center-chip">${esc(centerOptionLabel(num))}<button type="button" onclick="removeCenterSelection('${esc(num)}')">×</button></span>`).join('')
     : '<span class="center-chip">كل المراكز</span>';
   filterCenterOptions();
 }
@@ -470,15 +510,26 @@ function fillSelect(id, values){
   values.forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;sel.appendChild(o);});
 }
 function applyFilter(){
-  const from=document.getElementById('fFrom').value;
-  const to=document.getElementById('fTo').value;
+  const assignFrom=parseDateTime(document.getElementById('fAssignFrom').value);
+  const assignTo=parseDateTime(document.getElementById('fAssignTo').value);
+  const assessFrom=parseDateTime(document.getElementById('fAssessFrom').value);
+  const assessTo=parseDateTime(document.getElementById('fAssessTo').value);
   const template=document.getElementById('fTemplate').value;
   const loc=document.getElementById('fLoc').value;
   const centers=selectedCenterNumbers();
   filteredRows=rawRows.filter(r=>{
-    const d=parseDate(rowDate(r));
-    if(from&&d&&d<from) return false;
-    if(to&&d&&d>to) return false;
+    if(assignFrom!=null || assignTo!=null){
+      const assignedAt=rowAssignmentDateTime(r);
+      if(assignedAt==null) return false;
+      if(assignFrom!=null && assignedAt<assignFrom) return false;
+      if(assignTo!=null && assignedAt>assignTo) return false;
+    }
+    if(assessFrom!=null || assessTo!=null){
+      const assessedAt=rowAssessmentDateTime(r);
+      if(assessedAt==null) return false;
+      if(assessFrom!=null && assessedAt<assessFrom) return false;
+      if(assessTo!=null && assessedAt>assessTo) return false;
+    }
     if(template&&r['اسم القالب']!==template) return false;
     if(loc&&r['الموقع']!==loc) return false;
     if(centers.length&&!centers.includes(centerNumber(r))) return false;
@@ -487,7 +538,7 @@ function applyFilter(){
   renderAll();
 }
 function clearFilter(){
-  ['fFrom','fTo','fTemplate','fLoc'].forEach(id=>document.getElementById(id).value='');
+  ['fAssignFrom','fAssignTo','fAssessFrom','fAssessTo','fTemplate','fLoc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('centerSearch').value='';
   setCenterSelection([]);
   filteredRows=[...rawRows];
@@ -550,6 +601,8 @@ function renderAll(){
   renderCenterComparison();
   renderMissingCenters();
   renderAssessedCenters();
+  renderAssignedCenters();
+  renderUnassignedCenters();
   renderTable();
   renderChart();
 }
@@ -563,7 +616,8 @@ function renderKpis(){
     <div class="kpi"><div class="kpi-lbl">عدد الأسئلة التي ظهر فيها لا</div><div class="kpi-val">${summaryRows.length}</div></div>
     <div class="kpi"><div class="kpi-lbl">نسبة لا من إجابات نعم/لا</div><div class="kpi-val">${totalAnswers?Math.round(totalNo/totalAnswers*100):0}%</div></div>
     <div class="kpi"><div class="kpi-lbl">المراكز المقيمة من القائمة</div><div class="kpi-val">${centersWithScores.length}/${centerRows.length}</div></div>
-    <div class="kpi"><div class="kpi-lbl">المراكز بدون تقييم</div><div class="kpi-val">${centerRows.length-centersWithScores.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">المراكز بدون تقييم</div><div class="kpi-val">${missingCenters().length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">المراكز بدون استمارة</div><div class="kpi-val">${unassignedCenters().length}</div></div>
     <div class="kpi"><div class="kpi-lbl">أعلى سؤال</div><div class="kpi-val" style="font-size:1.05rem;line-height:1.45">${top?esc(top.question).slice(0,80):'—'}</div></div>`;
 }
 function renderCenterComparison(){
@@ -586,11 +640,29 @@ function renderCenterComparison(){
     <tbody>${rows}</tbody>`;
   document.getElementById('centerScoreAvg').textContent=avg==null?'—':fmtScore(avg);
 }
+function assignedCenterSet(){
+  const activeSet=new Set(activeTargetCenters());
+  const assigned=new Set();
+  filteredRows.forEach(row=>{
+    const center=centerNumber(row);
+    if(activeSet.has(center)) assigned.add(center);
+  });
+  return assigned;
+}
 function missingCenters(){
-  return centerRows.filter(r=>r.score==null).map(r=>r.center);
+  const assigned=assignedCenterSet();
+  return centerRows.filter(r=>r.score==null && assigned.has(r.center)).map(r=>r.center);
 }
 function assessedCenters(){
   return centerRows.filter(r=>r.score!=null).map(r=>r.center);
+}
+function assignedCenters(){
+  const assigned=assignedCenterSet();
+  return activeTargetCenters().filter(center=>assigned.has(center));
+}
+function unassignedCenters(){
+  const assigned=assignedCenterSet();
+  return activeTargetCenters().filter(center=>!assigned.has(center));
 }
 function centerProgressStat(count){
   const total=centerRows.length || activeTargetCenters().length;
@@ -611,6 +683,22 @@ function renderAssessedCenters(){
     ? `<div class="missing-centers-list">${assessed.map(c=>`<span class="assessed-center-chip">${c}</span>`).join('')}</div>`
     : '<div class="missing-centers-empty">لا توجد مراكز مقيمة ضمن الفلاتر الحالية</div>';
   document.getElementById('assessedCentersBody').innerHTML=list;
+}
+function renderAssignedCenters(){
+  const assigned=assignedCenters();
+  document.getElementById('assignedCentersCount').textContent=centerProgressStat(assigned.length);
+  const list=assigned.length
+    ? `<div class="missing-centers-list">${assigned.map(c=>`<span class="assigned-center-chip">${c}</span>`).join('')}</div>`
+    : '<div class="missing-centers-empty">لا توجد مراكز مسندة ضمن الفلاتر الحالية</div>';
+  document.getElementById('assignedCentersBody').innerHTML=list;
+}
+function renderUnassignedCenters(){
+  const unassigned=unassignedCenters();
+  document.getElementById('unassignedCentersCount').textContent=centerProgressStat(unassigned.length);
+  const list=unassigned.length
+    ? `<div class="missing-centers-list">${unassigned.map(c=>`<span class="unassigned-center-chip">${c}</span>`).join('')}</div>`
+    : '<div class="missing-centers-empty">تم إسناد استمارات لجميع المراكز المحددة</div>';
+  document.getElementById('unassignedCentersBody').innerHTML=list;
 }
 function renderTable(){
   const rows=summaryRows.map((r,i)=>`<tr>
@@ -911,6 +999,14 @@ function exportPDF(){
   const assessedHtml=assessed.length
     ? assessed.map(c=>`<span class="assessed-center-chip">${c}</span>`).join('')
     : '<span class="missing-centers-empty">لا توجد مراكز مقيمة ضمن الفلاتر الحالية</span>';
+  const assigned=assignedCenters();
+  const assignedHtml=assigned.length
+    ? assigned.map(c=>`<span class="assigned-center-chip">${c}</span>`).join('')
+    : '<span class="missing-centers-empty">لا توجد مراكز مسندة ضمن الفلاتر الحالية</span>';
+  const unassigned=unassignedCenters();
+  const unassignedHtml=unassigned.length
+    ? unassigned.map(c=>`<span class="unassigned-center-chip">${c}</span>`).join('')
+    : '<span class="missing-centers-empty">تم إسناد استمارات لجميع المراكز المحددة</span>';
   const totalAnswers=summaryRows.reduce((s,r)=>s+r.total,0);
   const totalNo=summaryRows.reduce((s,r)=>s+r.no,0);
   const top=summaryRows[0];
@@ -941,6 +1037,9 @@ function exportPDF(){
         <div class="pkpis">
           <div class="pkpi"><span>المراكز المقيمة</span><strong>${scored.length}/${centerRows.length}</strong></div>
           <div class="pkpi"><span>المراكز بدون تقييم</span><strong>${missing.length}</strong></div>
+          <div class="pkpi"><span>المراكز بدون استمارة</span><strong>${unassigned.length}</strong></div>
+        </div>
+        <div class="pkpis">
           <div class="pkpi"><span>أعلى سؤال</span><strong style="font-size:10pt;line-height:1.5">${top?esc(top.question).slice(0,95):'—'}</strong></div>
         </div>
       </div>
@@ -967,6 +1066,16 @@ function exportPDF(){
       <div class="psection">
         <div class="psection-title">المراكز التي تم تقييمها (${centerProgressStat(assessed.length)})</div>
         <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">${assessedHtml}</div>
+      </div>
+
+      <div class="psection">
+        <div class="psection-title">المراكز التي تم الإسناد إليها (${centerProgressStat(assigned.length)})</div>
+        <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">${assignedHtml}</div>
+      </div>
+
+      <div class="psection">
+        <div class="psection-title">المراكز التي لم يتم الإسناد إليها (${centerProgressStat(unassigned.length)})</div>
+        <div style="padding:8px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;border:1px solid #D9E1EF;-webkit-print-color-adjust:exact;print-color-adjust:exact">${unassignedHtml}</div>
       </div>
 
       <div class="psection">
