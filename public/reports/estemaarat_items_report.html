@@ -535,6 +535,7 @@ function clearFilter(){
 
 // Strip leading "N. " or "NN. " number prefix from question labels
 function stripQNum(q){ return String(q||'').replace(/^\d+\.\s*/,''); }
+function centersCellHtml(text,n=8){if(!text||text==='—')return'—';const p=text.split('، ');const lines=[];for(let i=0;i<p.length;i+=n)lines.push(p.slice(i,i+n).join('، '));return lines.join('،<br>');}
 // Returns true if question is a section header (not a real question)
 function isSectionHeader(q){ return /^عناصر\s/i.test(stripQNum(q)) || /^أسئلة\s+استمارة/i.test(stripQNum(q)); }
 
@@ -664,7 +665,7 @@ function renderTable(){
     <td>${esc(r.locationsText||'—')}</td>
     <td class="question">${esc(stripQNum(r.question))}</td>
     <td><span class="pill pill-no">${r.no}</span></td>
-    <td>${esc(r.centersText||'—')}</td>
+    <td>${centersCellHtml(r.centersText)}</td>
   </tr>`).join('');
   document.getElementById('rankTable').innerHTML=summaryRows.length?`
     <thead><tr><th>#</th><th>الاستمارة</th><th>الموقع</th><th>السؤال</th><th>لا</th><th>المراكز</th></tr></thead>
@@ -1067,7 +1068,7 @@ function exportPDF(){
     <td>${esc(r.locationsText||'—')}</td>
     <td class="q">${esc(stripQNum(r.question))}</td>
     <td>${r.no}</td>
-    <td>${esc(r.centersText||'—')}</td>
+    <td>${centersCellHtml(r.centersText)}</td>
   </tr>`).join('');
 
   const sectionHTML = {
