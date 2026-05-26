@@ -81,6 +81,7 @@ body{background:#F6F8FB;color:#102A4C}
 .rank-table tr:nth-child(even) td{background:#F8FAFD}
 .rank-table td.question{text-align:right;min-width:320px;line-height:1.45;color:var(--ink);font-weight:600}
 .rank-table td.template{color:var(--muted);min-width:170px}
+.rank-table td.centers{min-width:260px;word-break:keep-all}
 .center-score-panel{margin-bottom:16px}
 .center-score-sub{font-size:.76rem;font-weight:600;color:#DDE7F7}
 .center-table-wrap{overflow:auto}
@@ -665,7 +666,7 @@ function renderTable(){
     <td>${esc(r.locationsText||'—')}</td>
     <td class="question">${esc(stripQNum(r.question))}</td>
     <td><span class="pill pill-no">${r.no}</span></td>
-    <td>${centersCellHtml(r.centersText)}</td>
+    <td class="centers">${centersCellHtml(r.centersText)}</td>
   </tr>`).join('');
   document.getElementById('rankTable').innerHTML=summaryRows.length?`
     <thead><tr><th>#</th><th>الاستمارة</th><th>الموقع</th><th>السؤال</th><th>لا</th><th>المراكز</th></tr></thead>
@@ -1068,7 +1069,7 @@ function exportPDF(){
     <td>${esc(r.locationsText||'—')}</td>
     <td class="q">${esc(stripQNum(r.question))}</td>
     <td>${r.no}</td>
-    <td>${centersCellHtml(r.centersText)}</td>
+    <td class="centers">${centersCellHtml(r.centersText)}</td>
   </tr>`).join('');
 
   const sectionHTML = {
