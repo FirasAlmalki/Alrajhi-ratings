@@ -764,6 +764,69 @@ function summarizeVisitRows(rows){
     .map(x=>({template:x.template,team:x.team,center:x.center||centerNumber({['اسم المركز']:x.team}),visits:x.visits.size,lastDate:x.lastDate}))
     .sort((a,b)=>String(a.template).localeCompare(String(b.template),'ar') || centerOrder(a.center)-centerOrder(b.center) || String(a.team).localeCompare(String(b.team),'ar'));
 }
+function rowEmployee(row){
+  return row['الموظف'] || row['اسم المستخدم'] || row['الاسم'] || row['المشرف'] || '';
+}
+function summarizeCenterAssignments(rows){
+  const activeCenters=activeTargetCenters();
+  const activeSet=new Set(activeCenters);
+  const map=new Map(activeCenters.map(center=>[
+    center,
+    {center,team:centerNamesCache.get(center)||centerDefaultName(center),forms:new Set(),employees:new Set(),lastDate:''}
+  ]));
+  rows.forEach(row=>{
+    const center=centerNumber(row);
+    if(!activeSet.has(center)) return;
+    if(!map.has(center)){
+      map.set(center,{center,team:centerNamesCache.get(center)||rowCenter(row)||centerDefaultName(center),forms:new Set(),employees:new Set(),lastDate:''});
+    }
+    const item=map.get(center);
+    item.forms.add(assessmentKey(row));
+    const employee=rowEmployee(row);
+    if(employee) item.employees.add(employee);
+    const d=parseDate(rowDate(row));
+    if(d && (!item.lastDate || d>item.lastDate)) item.lastDate=d;
+  });
+  return [...map.values()]
+    .map(item=>({
+      center:item.center,
+      team:item.team,
+      assignedForms:item.forms.size,
+      employees:[...item.employees].sort((a,b)=>String(a).localeCompare(String(b),'ar')).join('، ') || 'غير محدد',
+      lastDate:item.lastDate
+    }))
+    .sort((a,b)=>centerOrder(a.center)-centerOrder(b.center) || String(a.team).localeCompare(String(b.team),'ar'));
+}
+function styleExcelSectionTitle(ws,rowNumber,titleText){
+  ws.mergeCells(`A${rowNumber}:E${rowNumber}`);
+  const cell=ws.getCell(rowNumber,1);
+  cell.value=titleText;
+  cell.font={name:'Tajawal',bold:true,size:13,color:{argb:'FFFFFFFF'}};
+  cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};
+  cell.alignment={horizontal:'center',vertical:'middle'};
+  ws.getRow(rowNumber).height=28;
+}
+function styleExcelHeader(row){
+  row.eachCell(c=>{
+    c.font={name:'Tajawal',bold:true,color:{argb:'FFD8BF63'}};
+    c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};
+    c.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+  });
+}
+function addAssignmentSection(ws,title,rows){
+  ws.addRow([]);
+  const titleRow=ws.addRow([]).number;
+  styleExcelSectionTitle(ws,titleRow,title);
+  ws.addRow(['رقم المركز','فريق الضيافة','عدد الاستمارات المسندة','الموظف المسؤول عن التقييم','تاريخ اخر إسناد/تقييم']);
+  styleExcelHeader(ws.getRow(ws.rowCount));
+  if(rows.length){
+    rows.forEach(r=>{
+      ws.addRow([r.center,r.team,r.assignedForms,r.employees,r.lastDate?fmtDate(r.lastDate):'']);
+    });
+  }else{
+    ws.addRow(['لا توجد مراكز ضمن هذا التصنيف','','','','']);
+  }
+}
 async function exportExcel(){
   const btn=document.getElementById('excelBtn'), old=btn.textContent;
   btn.disabled=true; btn.textContent='جاري التصدير...';
@@ -791,21 +854,27 @@ async function exportExcel(){
     }catch{}
     ws.addRow([]);
     const visitRows=summarizeVisitRows(filteredRows);
+    const assignmentRows=summarizeCenterAssignments(filteredRows);
+    const unassignedRows=assignmentRows.filter(r=>r.assignedForms===0);
+    const lessThanTwoRows=assignmentRows.filter(r=>r.assignedForms>0 && r.assignedForms<2);
     ws.addRow(['تاريخ التصدير',new Date().toLocaleString('ar-SA'),'عدد السجلات',visitRows.length]);
     ws.addRow(['اسم القالب','فريق الضيافة','عدد الزيارات','تاريخ اخر تقييم']);
     const hdr=ws.getRow(5);
-    hdr.eachCell(c=>{c.font={name:'Tajawal',bold:true,color:{argb:'FFD8BF63'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};c.alignment={horizontal:'center'};});
+    styleExcelHeader(hdr);
     visitRows.forEach(r=>{
       ws.addRow([r.template,r.team,r.visits,r.lastDate?fmtDate(r.lastDate):'']);
     });
     if(!visitRows.length) ws.addRow(['لا توجد زيارات مقيمة ضمن الفلاتر الحالية','','','']);
-    ws.columns=[{width:36},{width:42},{width:16},{width:18}];
+    addAssignmentSection(ws,'المراكز التي لم يتم إسناد أي استمارة لها',unassignedRows);
+    addAssignmentSection(ws,'المراكز التي لديها أقل من استمارتين مسندة',lessThanTwoRows);
+    ws.columns=[{width:36},{width:42},{width:20},{width:34},{width:20}];
     ws.eachRow((row,idx)=>row.eachCell(cell=>{
-      cell.font={...(cell.font||{}),name:'Tajawal',bold:idx===5||idx<=2};
+      const hasNavyFill=cell.fill?.fgColor?.argb==='FF173C78';
+      cell.font={...(cell.font||{}),name:'Tajawal',bold:Boolean(cell.font?.bold || idx===5 || idx<=2)};
       cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
       cell.border={top:{style:'thin',color:{argb:'FFD9E1EF'}},left:{style:'thin',color:{argb:'FFD9E1EF'}},bottom:{style:'thin',color:{argb:'FFD9E1EF'}},right:{style:'thin',color:{argb:'FFD9E1EF'}}};
       if(idx===5){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF173C78'}};cell.font={name:'Tajawal',bold:true,color:{argb:'FFD8BF63'}};}
-      else if(idx>5 && idx%2===0){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFD'}};}
+      else if(!hasNavyFill && idx>5 && idx%2===0){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFD'}};}
     }));
     const buf=await wb.xlsx.writeBuffer();
     const a=document.createElement('a');
