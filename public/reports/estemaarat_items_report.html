@@ -476,10 +476,13 @@ function filterCenterOptions(){
 }
 
 async function loadData(){
-  const r=await fetch(WEBHOOK);
+  const r=await fetch(WEBHOOK,{cache:'no-store'});
   if(!r.ok) throw new Error('fetch failed');
   const d=await r.json();
-  return Array.isArray(d)?d:[d];
+  const rows=Array.isArray(d)?d:[d];
+  return rows.map(row=>Object.fromEntries(
+    Object.entries(row).map(([key,value])=>[key,typeof value==='string'?value.trim():value])
+  ));
 }
 
 (async function init(){
@@ -538,7 +541,10 @@ function clearFilter(){
 function stripQNum(q){ return String(q||'').replace(/^\d+\.\s*/,''); }
 function centersCellHtml(text,n=8){if(!text||text==='—')return'—';const p=text.split('، ');const lines=[];for(let i=0;i<p.length;i+=n)lines.push(p.slice(i,i+n).join('، '));return lines.join('،<br>');}
 // Returns true if question is a section header (not a real question)
-function isSectionHeader(q){ return /^عناصر\s/i.test(stripQNum(q)) || /^أسئلة\s+استمارة/i.test(stripQNum(q)); }
+function isSectionHeader(q){
+  const text=stripQNum(q);
+  return (/^عناصر\s/i.test(text) || /^أسئلة\s+استمارة/i.test(text)) && !/\s\d+\.\s/.test(text);
+}
 
 function rowResponses(row){
   const qKey=findKey(row,QUESTION_KEYS);
