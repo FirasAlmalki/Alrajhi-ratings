@@ -607,11 +607,13 @@ function renderAll(){
   renderChart();
 }
 function renderKpis(){
+  const totalForms=formsCount(filteredRows);
   const totalAnswers=summaryRows.reduce((s,r)=>s+r.total,0);
   const totalNo=summaryRows.reduce((s,r)=>s+r.no,0);
   const top=summaryRows[0];
   const centersWithScores=centerRows.filter(r=>r.score!=null);
   document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi"><div class="kpi-lbl">إجمالي الاستمارات</div><div class="kpi-val">${totalForms}</div></div>
     <div class="kpi dark"><div class="kpi-lbl">إجمالي إجابات لا</div><div class="kpi-val">${totalNo}</div></div>
     <div class="kpi"><div class="kpi-lbl">عدد الأسئلة التي ظهر فيها لا</div><div class="kpi-val">${summaryRows.length}</div></div>
     <div class="kpi"><div class="kpi-lbl">نسبة لا من إجابات نعم/لا</div><div class="kpi-val">${totalAnswers?Math.round(totalNo/totalAnswers*100):0}%</div></div>
