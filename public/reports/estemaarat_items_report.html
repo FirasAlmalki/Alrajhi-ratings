@@ -64,7 +64,7 @@ body{background:#F6F8FB;color:#102A4C}
 .panel{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 20px rgba(16,42,76,.06);overflow:hidden}
 .panel-hdr{background:var(--navy);color:#fff;padding:11px 16px;font-size:.9rem;font-weight:800;border-bottom:3px solid var(--gold);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .panel-body{padding:16px}
-.chart-wrap{height:430px;position:relative}
+.chart-wrap{height:520px;position:relative}
 .panel-action{background:rgba(216,191,99,.16);border:1px solid rgba(216,191,99,.45);color:var(--gold);border-radius:7px;padding:5px 11px;font-family:inherit;font-size:.72rem;font-weight:800;cursor:pointer}
 .panel-action:hover{background:rgba(216,191,99,.28)}
 .chart-modal{position:fixed;inset:0;background:rgba(12,37,80,.78);z-index:900;display:none;align-items:center;justify-content:center;padding:22px}
@@ -692,10 +692,27 @@ const outsidePieLabels = {
     ctx.save();
     const labelSize = chart.options.plugins?.outsidePieLabels?.fontSize || 11;
     const lineLength = chart.options.plugins?.outsidePieLabels?.lineLength || 34;
+    const maxLabelWidth = chart.options.plugins?.outsidePieLabels?.maxLabelWidth || 230;
     ctx.font = `600 ${labelSize}px Tajawal, Arial`;
     ctx.strokeStyle = '#B99B35';
     ctx.fillStyle = '#173C78';
     ctx.lineWidth = 1.4;
+    function wrapText(text,maxWidth){
+      const words=String(text||'').split(/\s+/).filter(Boolean);
+      const lines=[];
+      let line='';
+      words.forEach(word=>{
+        const test=line?`${line} ${word}`:word;
+        if(ctx.measureText(test).width>maxWidth && line){
+          lines.push(line);
+          line=word;
+        }else{
+          line=test;
+        }
+      });
+      if(line) lines.push(line);
+      return lines.length?lines:[''];
+    }
     meta.data.forEach((arc, i)=>{
       const value = Number(values[i]||0);
       if(!value) return;
@@ -709,7 +726,10 @@ const outsidePieLabels = {
       const mx = cx + Math.cos(angle) * (outer + 22);
       const my = cy + Math.sin(angle) * (outer + 22);
       const rightSide = Math.cos(angle) >= 0;
-      const ex = mx + (rightSide ? lineLength : -lineLength);
+      let ex = mx + (rightSide ? lineLength : -lineLength);
+      const margin=16;
+      if(rightSide) ex=Math.min(ex, chart.width - maxLabelWidth - margin);
+      else ex=Math.max(ex, maxLabelWidth + margin);
       ctx.beginPath();
       ctx.moveTo(sx, sy);
       ctx.lineTo(mx, my);
@@ -717,23 +737,27 @@ const outsidePieLabels = {
       ctx.stroke();
       ctx.textAlign = rightSide ? 'left' : 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${label} (${value})`, ex + (rightSide ? 5 : -5), my);
+      const lines=wrapText(`${label} (${value})`,maxLabelWidth);
+      const lineHeight=labelSize+5;
+      const textX=ex + (rightSide ? 6 : -6);
+      const startY=my - ((lines.length-1)*lineHeight/2);
+      lines.forEach((line,idx)=>ctx.fillText(line,textX,startY+(idx*lineHeight)));
     });
     ctx.restore();
   }
 };
 function chartConfig(rows, opts={}){
-  const labelLength = opts.labelLength || 42;
   const labelSize = opts.labelSize || 11;
-  const sidePadding = opts.sidePadding || 170;
+  const sidePadding = opts.sidePadding || 250;
+  const maxLabelWidth = opts.maxLabelWidth || 230;
   return {
     type:'doughnut',
     data:{
-      labels:rows.map(r=>{ const q=r.question.replace(/^\d+\.\s*/,''); return q.length>labelLength?q.slice(0,labelLength)+'...':q; }),
+      labels:rows.map(r=>r.question.replace(/^\d+\.\s*/,'')),
       datasets:[{
         label:'عدد لا',
         data:rows.map(r=>r.no),
-        backgroundColor:['#173C78','#D8BF63','#2E5490','#B99B35','#0C2550','#E8D98F','#62718A','#8AADDA','#D9E1EF'],
+        backgroundColor:rows.map((_,i)=>['#173C78','#D8BF63','#2E5490','#B99B35','#0C2550','#E8D98F','#62718A','#8AADDA','#D9E1EF'][i%9]),
         borderColor:'#FFFFFF',
         borderWidth:2
       }]
@@ -745,7 +769,7 @@ function chartConfig(rows, opts={}){
       layout:{padding:{left:sidePadding,right:sidePadding,top:18,bottom:18}},
       plugins:{
         legend:{display:false},
-        outsidePieLabels:{fontSize:labelSize,lineLength:opts.lineLength||34},
+        outsidePieLabels:{fontSize:labelSize,lineLength:opts.lineLength||34,maxLabelWidth},
         tooltip:{rtl:true,textDirection:'rtl',callbacks:{label(ctx){return `${ctx.label}: ${ctx.parsed} لا`;}}}
       }
     },
@@ -757,11 +781,18 @@ function chartRowsForSummary(){
   const otherNo=summaryRows.slice(5).reduce((s,r)=>s+r.no,0);
   return otherNo>0?[...top,{question:'أخرى',no:otherNo}]:top;
 }
+function chartRowsForLarge(){
+  const maxItems=25;
+  const top=summaryRows.slice(0,maxItems);
+  const otherNo=summaryRows.slice(maxItems).reduce((s,r)=>s+r.no,0);
+  return otherNo>0?[...top,{question:'أخرى',no:otherNo}]:top;
+}
 function renderChart(){
   const chartRows=chartRowsForSummary();
   const ctx=document.getElementById('noChart');
+  ctx.closest('.chart-wrap').style.height=`${Math.max(560,chartRows.length*68)}px`;
   if(chart) chart.destroy();
-  chart=new Chart(ctx,chartConfig(chartRows));
+  chart=new Chart(ctx,chartConfig(chartRows,{labelSize:10,sidePadding:190,lineLength:26,maxLabelWidth:165}));
   if(chartLarge){
     chartLarge.destroy();
     chartLarge=null;
@@ -771,7 +802,7 @@ function renderChart(){
 function renderLargeChart(){
   const ctx=document.getElementById('noChartLarge');
   if(chartLarge) chartLarge.destroy();
-  chartLarge=new Chart(ctx,chartConfig(chartRowsForSummary(),{labelLength:72,labelSize:14,sidePadding:260,lineLength:58}));
+  chartLarge=new Chart(ctx,chartConfig(chartRowsForLarge(),{labelSize:13,sidePadding:300,lineLength:58,maxLabelWidth:300}));
 }
 function openChartModal(){
   document.getElementById('chartModal').classList.add('open');
