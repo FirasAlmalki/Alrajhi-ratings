@@ -72,8 +72,8 @@ body{background:#F6F8FB;color:#102A4C}
 .chart-modal-box{background:#fff;border:1px solid var(--line);border-radius:14px;width:min(1180px,96vw);height:min(780px,92vh);display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(16,42,76,.35)}
 .chart-modal-hdr{background:var(--navy);color:#fff;border-bottom:4px solid var(--gold);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:14px 14px 0 0;font-weight:800}
 .chart-modal-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:7px;padding:5px 12px;font-family:inherit;font-weight:800;cursor:pointer}
-.chart-modal-body{flex:1;padding:18px;min-height:0}
-.chart-modal-body canvas{width:100%!important;height:100%!important}
+.chart-modal-body{flex:1;padding:18px;min-height:0;overflow:auto}
+.chart-modal-body canvas{width:100%!important;display:block}
 .table-wrap{overflow:auto;max-height:620px}
 .rank-table{width:100%;border-collapse:collapse;font-size:.78rem}
 .rank-table th{position:sticky;top:0;background:var(--navy);color:var(--gold);padding:9px 10px;border:1px solid #2B5594;text-align:center;white-space:nowrap;z-index:1}
@@ -693,10 +693,18 @@ const outsidePieLabels = {
     const labelSize = chart.options.plugins?.outsidePieLabels?.fontSize || 11;
     const lineLength = chart.options.plugins?.outsidePieLabels?.lineLength || 34;
     const maxLabelWidth = chart.options.plugins?.outsidePieLabels?.maxLabelWidth || 230;
+    const maxLabelLines = chart.options.plugins?.outsidePieLabels?.maxLabelLines || 3;
     ctx.font = `600 ${labelSize}px Tajawal, Arial`;
     ctx.strokeStyle = '#B99B35';
     ctx.fillStyle = '#173C78';
     ctx.lineWidth = 1.4;
+    const lineGap = 7;
+    function fitLine(text,maxWidth){
+      let out=String(text||'');
+      if(ctx.measureText(out).width<=maxWidth) return out;
+      while(out.length>1 && ctx.measureText(`${out}…`).width>maxWidth) out=out.slice(0,-1);
+      return `${out}…`;
+    }
     function wrapText(text,maxWidth){
       const words=String(text||'').split(/\s+/).filter(Boolean);
       const lines=[];
@@ -711,14 +719,42 @@ const outsidePieLabels = {
         }
       });
       if(line) lines.push(line);
-      return lines.length?lines:[''];
+      if(!lines.length) return [''];
+      if(lines.length>maxLabelLines){
+        const kept=lines.slice(0,maxLabelLines);
+        kept[maxLabelLines-1]=fitLine(`${kept[maxLabelLines-1]} ${lines.slice(maxLabelLines).join(' ')}`,maxWidth);
+        return kept;
+      }
+      return lines.map(x=>fitLine(x,maxWidth));
     }
+    function distributeLabels(items){
+      const top=26;
+      const bottom=chart.height-26;
+      items.sort((a,b)=>a.desiredY-b.desiredY);
+      items.forEach((item,idx)=>{
+        const minY=idx===0
+          ? top+(item.height/2)
+          : items[idx-1].y+(items[idx-1].height/2)+(item.height/2)+lineGap;
+        item.y=Math.max(item.desiredY,minY);
+      });
+      const last=items[items.length-1];
+      if(last && last.y+(last.height/2)>bottom){
+        last.y=bottom-(last.height/2);
+        for(let i=items.length-2;i>=0;i--){
+          const maxY=items[i+1].y-(items[i+1].height/2)-(items[i].height/2)-lineGap;
+          items[i].y=Math.min(items[i].y,maxY);
+        }
+      }
+      items.forEach(item=>{
+        item.y=Math.max(top+(item.height/2),Math.min(bottom-(item.height/2),item.y));
+      });
+    }
+    const labelItems=[];
     meta.data.forEach((arc, i)=>{
       const value = Number(values[i]||0);
       if(!value) return;
       const angle = (arc.startAngle + arc.endAngle) / 2;
       const label = String(data.labels[i]||'');
-      const pct = Math.round(value / total * 100);
       const cx = arc.x, cy = arc.y;
       const outer = arc.outerRadius;
       const sx = cx + Math.cos(angle) * (outer + 4);
@@ -728,20 +764,29 @@ const outsidePieLabels = {
       const rightSide = Math.cos(angle) >= 0;
       let ex = mx + (rightSide ? lineLength : -lineLength);
       const margin=16;
-      if(rightSide) ex=Math.min(ex, chart.width - maxLabelWidth - margin);
-      else ex=Math.max(ex, maxLabelWidth + margin);
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(mx, my);
-      ctx.lineTo(ex, my);
-      ctx.stroke();
-      ctx.textAlign = rightSide ? 'left' : 'right';
-      ctx.textBaseline = 'middle';
+      if(rightSide) ex=chart.width - maxLabelWidth - margin - 8;
+      else ex=maxLabelWidth + margin + 8;
       const lines=wrapText(`${label} (${value})`,maxLabelWidth);
       const lineHeight=labelSize+5;
-      const textX=ex + (rightSide ? 6 : -6);
-      const startY=my - ((lines.length-1)*lineHeight/2);
-      lines.forEach((line,idx)=>ctx.fillText(line,textX,startY+(idx*lineHeight)));
+      labelItems.push({sx,sy,mx,my,ex,desiredY:my,rightSide,lines,lineHeight,height:lines.length*lineHeight});
+    });
+    const rightItems=labelItems.filter(item=>item.rightSide);
+    const leftItems=labelItems.filter(item=>!item.rightSide);
+    distributeLabels(rightItems);
+    distributeLabels(leftItems);
+    [...rightItems,...leftItems].forEach(item=>{
+      ctx.beginPath();
+      ctx.moveTo(item.sx, item.sy);
+      ctx.lineTo(item.mx, item.my);
+      ctx.lineTo(item.ex, item.y);
+      ctx.stroke();
+      ctx.textAlign = item.rightSide ? 'left' : 'right';
+      ctx.textBaseline = 'middle';
+      const textX=item.rightSide
+        ? Math.min(item.ex + 6, chart.width - maxLabelWidth - 16)
+        : Math.max(item.ex - 6, maxLabelWidth + 16);
+      const startY=item.y - ((item.lines.length-1)*item.lineHeight/2);
+      item.lines.forEach((line,idx)=>ctx.fillText(line,textX,startY+(idx*item.lineHeight)));
     });
     ctx.restore();
   }
@@ -750,6 +795,8 @@ function chartConfig(rows, opts={}){
   const labelSize = opts.labelSize || 11;
   const sidePadding = opts.sidePadding || 250;
   const maxLabelWidth = opts.maxLabelWidth || 230;
+  const maxLabelLines = opts.maxLabelLines || 3;
+  const radius = opts.radius || '70%';
   return {
     type:'doughnut',
     data:{
@@ -765,11 +812,12 @@ function chartConfig(rows, opts={}){
     options:{
       responsive:true,
       maintainAspectRatio:false,
+      radius,
       cutout:'48%',
       layout:{padding:{left:sidePadding,right:sidePadding,top:18,bottom:18}},
       plugins:{
         legend:{display:false},
-        outsidePieLabels:{fontSize:labelSize,lineLength:opts.lineLength||34,maxLabelWidth},
+        outsidePieLabels:{fontSize:labelSize,lineLength:opts.lineLength||34,maxLabelWidth,maxLabelLines},
         tooltip:{rtl:true,textDirection:'rtl',callbacks:{label(ctx){return `${ctx.label}: ${ctx.parsed} لا`;}}}
       }
     },
@@ -801,8 +849,16 @@ function renderChart(){
 }
 function renderLargeChart(){
   const ctx=document.getElementById('noChartLarge');
+  const chartRows=chartRowsForLarge();
+  const chartHeight=Math.max(680,chartRows.length*72);
+  ctx.style.height=`${chartHeight}px`;
+  ctx.height=chartHeight;
+  const radius=chartRows.length>22?'38%':chartRows.length>14?'48%':'62%';
+  const labelSize=chartRows.length>22?10:chartRows.length>14?11:13;
+  const maxLabelWidth=chartRows.length>18?260:320;
+  const maxLabelLines=chartRows.length>18?3:4;
   if(chartLarge) chartLarge.destroy();
-  chartLarge=new Chart(ctx,chartConfig(chartRowsForLarge(),{labelSize:13,sidePadding:300,lineLength:58,maxLabelWidth:300}));
+  chartLarge=new Chart(ctx,chartConfig(chartRows,{labelSize,sidePadding:300,lineLength:58,maxLabelWidth,maxLabelLines,radius}));
 }
 function openChartModal(){
   document.getElementById('chartModal').classList.add('open');
