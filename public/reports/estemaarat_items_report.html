@@ -166,7 +166,25 @@ body{background:#F6F8FB;color:#102A4C}
   <div class="fbar">
     <div class="fgrp"><div class="flbl">من تاريخ</div><input type="date" class="finp" id="fFrom"></div>
     <div class="fgrp"><div class="flbl">إلى تاريخ</div><input type="date" class="finp" id="fTo"></div>
-    <div class="fgrp"><div class="flbl">اسم الاستمارة</div><select class="finp" id="fTemplate"><option value="">— الكل —</option></select></div>
+    <div class="fgrp">
+      <div class="flbl">اسم الاستمارة</div>
+      <select class="hidden-select" id="fTemplate" multiple></select>
+      <div class="center-picker" id="templatePicker">
+        <button type="button" class="center-picker-btn" onclick="toggleTemplatePicker()">
+          <span id="templatePickerLabel">كل الاستمارات</span>
+          <span class="center-picker-count" id="templatePickerCount">—</span>
+        </button>
+        <div class="center-picker-menu">
+          <div class="center-picker-tools">
+            <input class="finp center-search" id="templateSearch" placeholder="بحث عن استمارة" oninput="filterTemplateOptions()">
+            <button type="button" class="center-mini-btn" onclick="selectAllTemplates()">تحديد الكل</button>
+            <button type="button" class="center-mini-btn" onclick="clearTemplateSelection()">مسح</button>
+          </div>
+          <div class="center-list" id="templateOptions"></div>
+          <div class="center-selected-chips" id="templateSelectedChips"></div>
+        </div>
+      </div>
+    </div>
     <div class="fgrp"><div class="flbl">الموقع</div><select class="finp" id="fLoc"><option value="">— الكل —</option></select></div>
     <div class="fgrp">
       <div class="flbl">مراكز الضيافة</div>
@@ -409,6 +427,70 @@ function fillCenterSelect(){
   });
   renderCenterPicker();
 }
+function fillTemplateSelect(values){
+  const sel=document.getElementById('fTemplate');
+  sel.innerHTML='';
+  values.forEach(v=>{
+    const o=document.createElement('option');
+    o.value=o.textContent=v;
+    sel.appendChild(o);
+  });
+  renderTemplatePicker();
+}
+function selectedTemplates(){
+  const sel=document.getElementById('fTemplate');
+  if(!sel) return [];
+  return [...sel.selectedOptions].map(o=>o.value).filter(Boolean);
+}
+function setTemplateSelection(values){
+  const selected=new Set(values);
+  [...document.getElementById('fTemplate').options].forEach(o=>{o.selected=selected.has(o.value);});
+  renderTemplatePicker();
+}
+function toggleTemplatePicker(){
+  document.getElementById('templatePicker').classList.toggle('open');
+}
+function renderTemplatePicker(){
+  const selected=selectedTemplates();
+  const selectedSet=new Set(selected);
+  const allTemplates=[...document.getElementById('fTemplate').options].map(o=>o.value);
+  const list=document.getElementById('templateOptions');
+  const chips=document.getElementById('templateSelectedChips');
+  const label=document.getElementById('templatePickerLabel');
+  const count=document.getElementById('templatePickerCount');
+  if(!list || !chips || !label || !count) return;
+  label.textContent=selected.length?`${selected.length} استمارات محددة`:'كل الاستمارات';
+  count.textContent=selected.length?selected.length:allTemplates.length;
+  list.innerHTML=allTemplates.map(template=>`
+    <label class="center-option" data-template-text="${esc(template)}">
+      <input type="checkbox" value="${esc(template)}" ${selectedSet.has(template)?'checked':''} onchange="toggleTemplateOption(this.value,this.checked)">
+      <span>${esc(template)}</span>
+    </label>`).join('');
+  chips.innerHTML=selected.length
+    ? selected.map(template=>`<span class="center-chip">${esc(template)}<button type="button" onclick="removeTemplateSelection(decodeURIComponent('${encodeURIComponent(template)}'))">×</button></span>`).join('')
+    : '<span class="center-chip">كل الاستمارات</span>';
+  filterTemplateOptions();
+}
+function toggleTemplateOption(template, checked){
+  const set=new Set(selectedTemplates());
+  checked?set.add(template):set.delete(template);
+  setTemplateSelection([...set]);
+}
+function removeTemplateSelection(template){
+  setTemplateSelection(selectedTemplates().filter(v=>v!==template));
+}
+function selectAllTemplates(){
+  setTemplateSelection([...document.getElementById('fTemplate').options].map(o=>o.value));
+}
+function clearTemplateSelection(){
+  setTemplateSelection([]);
+}
+function filterTemplateOptions(){
+  const q=norm(document.getElementById('templateSearch')?.value||'');
+  document.querySelectorAll('#templateOptions .center-option').forEach(el=>{
+    el.style.display=!q || norm(el.dataset.templateText).includes(q)?'flex':'none';
+  });
+}
 function selectedCenterNumbers(){
   const sel=document.getElementById('fCenter');
   if(!sel) return [];
@@ -495,7 +577,7 @@ async function loadData(){
     return;
   }
   rebuildCenterCaches();
-  fillSelect('fTemplate', unique(rawRows,'اسم القالب'));
+  fillTemplateSelect(unique(rawRows,'اسم القالب'));
   fillSelect('fLoc', unique(rawRows,'الموقع'));
   fillCenterSelect();
   document.getElementById('loadMsg').style.display='none';
@@ -506,6 +588,8 @@ async function loadData(){
 document.addEventListener('click',e=>{
   const picker=document.getElementById('centerPicker');
   if(picker && !picker.contains(e.target)) picker.classList.remove('open');
+  const templatePicker=document.getElementById('templatePicker');
+  if(templatePicker && !templatePicker.contains(e.target)) templatePicker.classList.remove('open');
 });
 
 function fillSelect(id, values){
@@ -515,14 +599,14 @@ function fillSelect(id, values){
 function applyFilter(){
   const from=document.getElementById('fFrom').value;
   const to=document.getElementById('fTo').value;
-  const template=document.getElementById('fTemplate').value;
+  const templates=selectedTemplates();
   const loc=document.getElementById('fLoc').value;
   const centers=selectedCenterNumbers();
   filteredRows=rawRows.filter(r=>{
     const d=parseDate(rowDate(r));
     if(from&&d&&d<from) return false;
     if(to&&d&&d>to) return false;
-    if(template&&r['اسم القالب']!==template) return false;
+    if(templates.length&&!templates.includes(r['اسم القالب'])) return false;
     if(loc&&r['الموقع']!==loc) return false;
     if(centers.length&&!centers.includes(centerNumber(r))) return false;
     return true;
@@ -530,7 +614,9 @@ function applyFilter(){
   renderAll();
 }
 function clearFilter(){
-  ['fFrom','fTo','fTemplate','fLoc'].forEach(id=>document.getElementById(id).value='');
+  ['fFrom','fTo','fLoc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('templateSearch').value='';
+  setTemplateSelection([]);
   document.getElementById('centerSearch').value='';
   setCenterSelection([]);
   filteredRows=[...rawRows];
@@ -875,8 +961,8 @@ async function imageToBase64(url){
 }
 function summarizeVisitRows(rows){
   const map=new Map();
-  const selectedTemplate=document.getElementById('fTemplate')?.value || '';
-  const templates=selectedTemplate?[selectedTemplate]:unique(rawRows,'اسم القالب');
+  const selected=selectedTemplates();
+  const templates=selected.length?selected:unique(rawRows,'اسم القالب');
   const centersByNumber=centerNamesCache;
   const targetCenters=activeTargetCenters();
   const templateList=templates.length?templates:['—'];
